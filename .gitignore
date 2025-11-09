@@ -1,0 +1,57 @@
+# Maven
+target/
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Input/Output files
+*.csv
+*.xlsx
+*.xls
+*.json
+*.xml
+*.yaml
+*.yml
+!pom.xml
+!application.properties
+!**/src/**/*.json
+!**/src/**/*.xml
+!**/src/**/*.yaml
+!**/src/**/*.yml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test output
+test-results/
+coverage/
+

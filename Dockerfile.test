@@ -1,0 +1,17 @@
+# Test Dockerfile for running tests in container
+FROM docker.io/library/maven:3.9-eclipse-temurin-17
+
+WORKDIR /app
+
+# Copy pom.xml first for dependency caching
+COPY pom.xml .
+
+# Download dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Default command runs tests
+CMD ["mvn", "test"]
+
