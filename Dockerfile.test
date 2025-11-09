@@ -15,3 +15,6 @@ COPY src ./src
 # Default command runs tests
 CMD ["mvn", "test"]
 
+
+
+

@@ -213,3 +213,5 @@ Tests run automatically in CI/CD pipeline:
 - Mock external services
 - Use test slices (`@WebMvcTest`, `@DataJpaTest`)
 
+
+
