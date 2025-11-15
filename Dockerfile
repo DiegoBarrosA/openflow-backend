@@ -7,7 +7,16 @@ RUN mvn clean package -DskipTests
 
 FROM docker.io/library/eclipse-temurin:17-jre-alpine
 WORKDIR /app
+
+# Create wallet directory
+RUN mkdir -p /app/wallet
+
+# Copy the built JAR
 COPY --from=build /app/target/*.jar app.jar
+
+# Copy wallet files (if building wallet into image - NOT recommended for production)
+# COPY wallet/* /app/wallet/
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
