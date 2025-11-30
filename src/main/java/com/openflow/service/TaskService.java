@@ -1,5 +1,25 @@
+package com.openflow.service;
+
 import com.openflow.dto.TaskDto;
+import com.openflow.model.Task;
+import com.openflow.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class TaskService {
+    @Autowired
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private BoardService boardService;
+
+    @Autowired
+    private StatusService statusService;
+
     private TaskDto toDto(Task task) {
         return new TaskDto(
             task.getId(),
@@ -21,6 +41,7 @@ import java.time.LocalDateTime;
         task.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
         return task;
     }
+
     public List<TaskDto> getTasksByBoardIdDto(Long boardId, Long userId) {
         return getTasksByBoardId(boardId, userId).stream().map(this::toDto).toList();
     }
@@ -39,25 +60,6 @@ import java.time.LocalDateTime;
         Task updated = updateTask(id, toEntity(taskDto), userId);
         return toDto(updated);
     }
-package com.openflow.service;
-
-import com.openflow.model.Task;
-import com.openflow.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class TaskService {
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private BoardService boardService;
-
-    @Autowired
-    private StatusService statusService;
 
     public List<Task> getTasksByBoardId(Long boardId, Long userId) {
         boardService.getBoardById(boardId, userId); // Validate board access
@@ -95,4 +97,3 @@ public class TaskService {
         taskRepository.delete(task);
     }
 }
-

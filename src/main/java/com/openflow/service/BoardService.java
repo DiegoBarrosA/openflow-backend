@@ -1,4 +1,18 @@
+package com.openflow.service;
+
 import com.openflow.dto.BoardDto;
+import com.openflow.model.Board;
+import com.openflow.repository.BoardRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class BoardService {
+    @Autowired
+    private BoardRepository boardRepository;
+
     private BoardDto toDto(Board board) {
         return new BoardDto(
             board.getId(),
@@ -16,6 +30,7 @@ import com.openflow.dto.BoardDto;
         board.setUserId(dto.getUserId());
         return board;
     }
+
     public List<BoardDto> getAllBoardsByUserIdDto(Long userId) {
         return getAllBoardsByUserId(userId).stream().map(this::toDto).toList();
     }
@@ -34,19 +49,6 @@ import com.openflow.dto.BoardDto;
         Board updated = updateBoard(id, toEntity(boardDto), userId);
         return toDto(updated);
     }
-package com.openflow.service;
-
-import com.openflow.model.Board;
-import com.openflow.repository.BoardRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class BoardService {
-    @Autowired
-    private BoardRepository boardRepository;
 
     public List<Board> getAllBoardsByUserId(Long userId) {
         return boardRepository.findByUserId(userId);
@@ -78,4 +80,3 @@ public class BoardService {
         boardRepository.delete(board);
     }
 }
-
