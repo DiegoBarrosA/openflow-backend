@@ -18,5 +18,6 @@ COPY --from=build /app/target/*.jar app.jar
 # COPY wallet/* /app/wallet/
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Use JAVA_OPTS if provided, otherwise use default
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]
 
