@@ -1,3 +1,44 @@
+import com.openflow.dto.TaskDto;
+import java.time.LocalDateTime;
+    private TaskDto toDto(Task task) {
+        return new TaskDto(
+            task.getId(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getStatusId(),
+            task.getBoardId(),
+            task.getCreatedAt()
+        );
+    }
+
+    private Task toEntity(TaskDto dto) {
+        Task task = new Task();
+        task.setId(dto.getId());
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setStatusId(dto.getStatusId());
+        task.setBoardId(dto.getBoardId());
+        task.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
+        return task;
+    }
+    public List<TaskDto> getTasksByBoardIdDto(Long boardId, Long userId) {
+        return getTasksByBoardId(boardId, userId).stream().map(this::toDto).toList();
+    }
+
+    public TaskDto getTaskByIdDto(Long id, Long userId) {
+        return toDto(getTaskById(id, userId));
+    }
+
+    public TaskDto createTaskDto(TaskDto taskDto, Long userId) {
+        Task task = toEntity(taskDto);
+        Task created = createTask(task, userId);
+        return toDto(created);
+    }
+
+    public TaskDto updateTaskDto(Long id, TaskDto taskDto, Long userId) {
+        Task updated = updateTask(id, toEntity(taskDto), userId);
+        return toDto(updated);
+    }
 package com.openflow.service;
 
 import com.openflow.model.Task;

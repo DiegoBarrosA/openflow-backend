@@ -1,6 +1,7 @@
 package com.openflow.controller;
 
 import com.openflow.model.Task;
+import com.openflow.dto.TaskDto;
 import com.openflow.service.TaskService;
 import com.openflow.service.UserService;
 import jakarta.validation.Valid;
@@ -27,10 +28,10 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getTasks(@RequestParam Long boardId, Authentication authentication) {
+    public ResponseEntity<List<TaskDto>> getTasks(@RequestParam Long boardId, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            List<Task> tasks = taskService.getTasksByBoardId(boardId, userId);
+            List<TaskDto> tasks = taskService.getTasksByBoardIdDto(boardId, userId);
             return ResponseEntity.ok(tasks);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -38,10 +39,10 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTask(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<TaskDto> getTask(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Task task = taskService.getTaskById(id, userId);
+            TaskDto task = taskService.getTaskByIdDto(id, userId);
             return ResponseEntity.ok(task);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -49,10 +50,10 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task, Authentication authentication) {
+    public ResponseEntity<TaskDto> createTask(@Valid @RequestBody TaskDto taskDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Task createdTask = taskService.createTask(task, userId);
+            TaskDto createdTask = taskService.createTaskDto(taskDto, userId);
             return ResponseEntity.ok(createdTask);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -60,10 +61,10 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @Valid @RequestBody Task task, Authentication authentication) {
+    public ResponseEntity<TaskDto> updateTask(@PathVariable Long id, @Valid @RequestBody TaskDto taskDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Task updatedTask = taskService.updateTask(id, task, userId);
+            TaskDto updatedTask = taskService.updateTaskDto(id, taskDto, userId);
             return ResponseEntity.ok(updatedTask);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

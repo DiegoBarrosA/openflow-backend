@@ -1,6 +1,7 @@
 package com.openflow.controller;
 
 import com.openflow.model.Board;
+import com.openflow.dto.BoardDto;
 import com.openflow.service.BoardService;
 import com.openflow.service.UserService;
 import jakarta.validation.Valid;
@@ -27,16 +28,17 @@ public class BoardController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Board>> getAllBoards(Authentication authentication) {
+    public ResponseEntity<List<BoardDto>> getAllBoards(Authentication authentication) {
         Long userId = getCurrentUserId(authentication);
-        return ResponseEntity.ok(boardService.getAllBoardsByUserId(userId));
+        List<BoardDto> boards = boardService.getAllBoardsByUserIdDto(userId);
+        return ResponseEntity.ok(boards);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Board> getBoard(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<BoardDto> getBoard(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Board board = boardService.getBoardById(id, userId);
+            BoardDto board = boardService.getBoardByIdDto(id, userId);
             return ResponseEntity.ok(board);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -44,10 +46,10 @@ public class BoardController {
     }
 
     @PostMapping
-    public ResponseEntity<Board> createBoard(@Valid @RequestBody Board board, Authentication authentication) {
+    public ResponseEntity<BoardDto> createBoard(@Valid @RequestBody BoardDto boardDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Board createdBoard = boardService.createBoard(board, userId);
+            BoardDto createdBoard = boardService.createBoardDto(boardDto, userId);
             return ResponseEntity.ok(createdBoard);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -55,10 +57,10 @@ public class BoardController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Board> updateBoard(@PathVariable Long id, @Valid @RequestBody Board board, Authentication authentication) {
+    public ResponseEntity<BoardDto> updateBoard(@PathVariable Long id, @Valid @RequestBody BoardDto boardDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Board updatedBoard = boardService.updateBoard(id, board, userId);
+            BoardDto updatedBoard = boardService.updateBoardDto(id, boardDto, userId);
             return ResponseEntity.ok(updatedBoard);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

@@ -1,3 +1,39 @@
+import com.openflow.dto.BoardDto;
+    private BoardDto toDto(Board board) {
+        return new BoardDto(
+            board.getId(),
+            board.getName(),
+            board.getDescription(),
+            board.getUserId()
+        );
+    }
+
+    private Board toEntity(BoardDto dto) {
+        Board board = new Board();
+        board.setId(dto.getId());
+        board.setName(dto.getName());
+        board.setDescription(dto.getDescription());
+        board.setUserId(dto.getUserId());
+        return board;
+    }
+    public List<BoardDto> getAllBoardsByUserIdDto(Long userId) {
+        return getAllBoardsByUserId(userId).stream().map(this::toDto).toList();
+    }
+
+    public BoardDto getBoardByIdDto(Long id, Long userId) {
+        return toDto(getBoardById(id, userId));
+    }
+
+    public BoardDto createBoardDto(BoardDto boardDto, Long userId) {
+        Board board = toEntity(boardDto);
+        Board created = createBoard(board, userId);
+        return toDto(created);
+    }
+
+    public BoardDto updateBoardDto(Long id, BoardDto boardDto, Long userId) {
+        Board updated = updateBoard(id, toEntity(boardDto), userId);
+        return toDto(updated);
+    }
 package com.openflow.service;
 
 import com.openflow.model.Board;

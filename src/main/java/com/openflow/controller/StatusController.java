@@ -1,6 +1,7 @@
 package com.openflow.controller;
 
 import com.openflow.model.Status;
+import com.openflow.dto.StatusDto;
 import com.openflow.service.StatusService;
 import com.openflow.service.UserService;
 import jakarta.validation.Valid;
@@ -27,10 +28,10 @@ public class StatusController {
     }
 
     @GetMapping("/board/{boardId}")
-    public ResponseEntity<List<Status>> getStatusesByBoard(@PathVariable Long boardId, Authentication authentication) {
+    public ResponseEntity<List<StatusDto>> getStatusesByBoard(@PathVariable Long boardId, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            List<Status> statuses = statusService.getStatusesByBoardId(boardId, userId);
+            List<StatusDto> statuses = statusService.getStatusesByBoardIdDto(boardId, userId);
             return ResponseEntity.ok(statuses);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -38,10 +39,10 @@ public class StatusController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Status> getStatus(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<StatusDto> getStatus(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Status status = statusService.getStatusById(id, userId);
+            StatusDto status = statusService.getStatusByIdDto(id, userId);
             return ResponseEntity.ok(status);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -49,10 +50,10 @@ public class StatusController {
     }
 
     @PostMapping
-    public ResponseEntity<Status> createStatus(@Valid @RequestBody Status status, Authentication authentication) {
+    public ResponseEntity<StatusDto> createStatus(@Valid @RequestBody StatusDto statusDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Status createdStatus = statusService.createStatus(status, userId);
+            StatusDto createdStatus = statusService.createStatusDto(statusDto, userId);
             return ResponseEntity.ok(createdStatus);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -60,10 +61,10 @@ public class StatusController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Status> updateStatus(@PathVariable Long id, @Valid @RequestBody Status status, Authentication authentication) {
+    public ResponseEntity<StatusDto> updateStatus(@PathVariable Long id, @Valid @RequestBody StatusDto statusDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
-            Status updatedStatus = statusService.updateStatus(id, status, userId);
+            StatusDto updatedStatus = statusService.updateStatusDto(id, statusDto, userId);
             return ResponseEntity.ok(updatedStatus);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

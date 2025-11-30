@@ -1,3 +1,41 @@
+import com.openflow.dto.StatusDto;
+    private StatusDto toDto(Status status) {
+        return new StatusDto(
+            status.getId(),
+            status.getName(),
+            status.getColor(),
+            status.getBoardId(),
+            status.getOrder()
+        );
+    }
+
+    private Status toEntity(StatusDto dto) {
+        Status status = new Status();
+        status.setId(dto.getId());
+        status.setName(dto.getName());
+        status.setColor(dto.getColor());
+        status.setBoardId(dto.getBoardId());
+        status.setOrder(dto.getOrder());
+        return status;
+    }
+    public List<StatusDto> getStatusesByBoardIdDto(Long boardId, Long userId) {
+        return getStatusesByBoardId(boardId, userId).stream().map(this::toDto).toList();
+    }
+
+    public StatusDto getStatusByIdDto(Long id, Long userId) {
+        return toDto(getStatusById(id, userId));
+    }
+
+    public StatusDto createStatusDto(StatusDto statusDto, Long userId) {
+        Status status = toEntity(statusDto);
+        Status created = createStatus(status, userId);
+        return toDto(created);
+    }
+
+    public StatusDto updateStatusDto(Long id, StatusDto statusDto, Long userId) {
+        Status updated = updateStatus(id, toEntity(statusDto), userId);
+        return toDto(updated);
+    }
 package com.openflow.service;
 
 import com.openflow.model.Status;
