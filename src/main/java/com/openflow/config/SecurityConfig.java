@@ -1,6 +1,7 @@
 package com.openflow.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,13 +45,25 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:3000}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        
+        // Parse allowed origins - support "*" for all origins or comma-separated list
+        if ("*".equals(allowedOrigins)) {
+            configuration.addAllowedOriginPattern("*");
+            configuration.setAllowCredentials(false); // Can't use credentials with wildcard
+        } else {
+            List<String> origins = Arrays.asList(allowedOrigins.split(","));
+            configuration.setAllowedOrigins(origins);
+            configuration.setAllowCredentials(true);
+        }
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
