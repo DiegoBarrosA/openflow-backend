@@ -17,6 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -52,18 +53,26 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Parse allowed origins - support "*" for all origins or comma-separated list
-        if ("*".equals(allowedOrigins)) {
-            configuration.addAllowedOriginPattern("*");
-            configuration.setAllowCredentials(false); // Can't use credentials with wildcard
-        } else {
-            List<String> origins = Arrays.asList(allowedOrigins.split(","));
-            configuration.setAllowedOrigins(origins);
-            configuration.setAllowCredentials(true);
+        // Parse allowed origins - comma-separated list of specific origins
+        // Wildcard "*" is not supported for security reasons
+        if (allowedOrigins == null || allowedOrigins.trim().isEmpty()) {
+            throw new IllegalStateException("CORS_ALLOWED_ORIGINS must be set to a valid origin URL");
         }
         
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .collect(Collectors.toList());
+        
+        if (origins.isEmpty()) {
+            throw new IllegalStateException("CORS_ALLOWED_ORIGINS must contain at least one valid origin URL");
+        }
+        
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
