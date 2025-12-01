@@ -100,19 +100,22 @@ kubectl logs -l app=openflow-backend
 kubectl get svc openflow-backend
 ```
 
+
 ## Documentation
 
-Comprehensive documentation is available in the `/docs` directory:
+All detailed documentation is maintained in the [`/docs`](docs/index.md) directory. Each section is designed to provide clear guidance and reference for contributors and users:
 
-- [Overview](docs/overview.md) - Project summary, goals, and features
-- [Architecture](docs/architecture.md) - File structure and design patterns
-- [Coding Standards](docs/coding-standards.md) - Naming conventions and best practices
-- [Dependencies](docs/dependencies.md) - Dependency list with versions
-- [Installation](docs/installation.md) - Setup and installation instructions
-- [Testing](docs/testing.md) - Testing framework and guidelines
-- [API Documentation](docs/api.md) - REST API endpoints and usage
-- [Workflows](docs/workflows.md) - Common tasks and development workflows
-- [Glossary](docs/glossary.md) - Terms and acronyms
+- [Overview](docs/overview.md): High-level summary of the project, its goals, and key features.
+- [Architecture](docs/architecture.md): Detailed explanation of the project's file and directory structure, including design patterns.
+- [Coding Standards](docs/coding-standards.md): Information about coding standards, naming conventions, and specific practices followed in the project.
+- [Dependencies](docs/dependencies.md): List of the project's dependencies and their versions.
+- [Installation](docs/installation.md): Clear instructions on how to set up and install the project.
+- [Testing](docs/testing.md): Explanation of the testing framework, guidelines, and containerized testing approach.
+- [API Documentation](docs/api.md): Detailed documentation on how to use any APIs or external interfaces.
+- [Workflows](docs/workflows.md): Examples of common tasks or workflows within the project.
+- [Glossary](docs/glossary.md): Glossary of terms and acronyms specific to the project.
+
+For a full index, see [`docs/index.md`](docs/index.md).
 
 ## Features
 
