@@ -30,10 +30,15 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank
     @Size(min = 6)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
+
+    @Column(name = "azure_ad_id", unique = true, nullable = true)
+    private String azureAdId;
+
+    @Column(name = "auth_provider", nullable = false)
+    private String authProvider = "jwt";
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
     @Autowired
@@ -32,6 +34,7 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setAuthProvider("jwt");
 
         user = userRepository.save(user);
 
@@ -54,6 +57,47 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    /**
+     * Find or create user from Azure AD claims.
+     * 
+     * @param azureAdId Azure AD object ID
+     * @param email User email
+     * @param name User display name
+     * @return User entity
+     */
+    public User findOrCreateFromAzureAd(String azureAdId, String email, String name) {
+        // This method is kept for compatibility but AzureAdUserService handles the logic
+        // The actual implementation uses JWT directly
+        Optional<User> existingUser = userRepository.findByAzureAdId(azureAdId);
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+        
+        // If not found by Azure AD ID, check by email
+        if (email != null) {
+            Optional<User> userByEmail = userRepository.findByEmail(email);
+            if (userByEmail.isPresent()) {
+                User user = userByEmail.get();
+                user.setAzureAdId(azureAdId);
+                user.setAuthProvider("both");
+                return userRepository.save(user);
+            }
+        }
+        
+        // Create new user
+        String username = email != null ? email.split("@")[0] : 
+                          (name != null ? name.replaceAll("\\s+", "").toLowerCase() : azureAdId);
+        
+        User newUser = new User();
+        newUser.setAzureAdId(azureAdId);
+        newUser.setEmail(email != null ? email : azureAdId + "@azure.local");
+        newUser.setUsername(username);
+        newUser.setPassword(null);
+        newUser.setAuthProvider("azure");
+        
+        return userRepository.save(newUser);
     }
 }
 

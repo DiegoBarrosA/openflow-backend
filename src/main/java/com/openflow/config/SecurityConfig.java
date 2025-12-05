@@ -1,5 +1,7 @@
 package com.openflow.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,26 +25,83 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    
     @Autowired
     @org.springframework.context.annotation.Lazy
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    @Autowired(required = false)
+    private AzureAdAuthenticationFilter azureAdAuthenticationFilter;
+    
+    @Value("${auth.mode:both}")
+    private String authMode;
+    
+    @Value("${AZURE_CLIENT_ID:}")
+    private String azureClientId;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+    
+    private boolean isAzureEnabled() {
+        // Azure is enabled if auth mode is "azure" or "both", AND Azure credentials are present
+        boolean modeAllowsAzure = "azure".equalsIgnoreCase(authMode) || "both".equalsIgnoreCase(authMode);
+        boolean hasAzureCredentials = azureClientId != null && !azureClientId.trim().isEmpty();
+        return modeAllowsAzure && hasAzureCredentials;
+    }
+    
+    private boolean isJwtEnabled() {
+        // JWT is enabled if auth mode is "jwt", "local", or "both"
+        return !"azure".equalsIgnoreCase(authMode);
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        logger.info("=== Security Configuration ===");
+        logger.info("AUTH_MODE value: '{}'", authMode);
+        logger.info("Azure Client ID present: {}", azureClientId != null && !azureClientId.trim().isEmpty());
+        logger.info("JWT Auth enabled: {}", isJwtEnabled());
+        logger.info("Azure OAuth enabled: {}", isAzureEnabled());
+        
         http.csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/auth/**", "/h2-console/**", "/oauth2/**", "/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())); // For H2 console
+            );
+        
+        // Add JWT filter if JWT auth is enabled
+        if (isJwtEnabled()) {
+            logger.info("Adding JwtAuthenticationFilter");
+            http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        }
+        
+        // Configure OAuth2 if Azure AD is enabled
+        if (isAzureEnabled()) {
+            logger.info("Configuring OAuth2 Login for Azure AD");
+            // OAuth2 Login for redirect flow
+            http.oauth2Login(oauth2 -> oauth2
+                .defaultSuccessUrl("/api/auth/azure/success", true)
+            );
+            
+            // OAuth2 Resource Server for token validation
+            http.oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> {})
+            );
+            
+            // Add Azure AD filter if available
+            if (azureAdAuthenticationFilter != null) {
+                http.addFilterAfter(azureAdAuthenticationFilter, OAuth2LoginAuthenticationFilter.class);
+            }
+        } else {
+            logger.info("Azure OAuth NOT configured (mode={}, hasCredentials={})", 
+                authMode, azureClientId != null && !azureClientId.trim().isEmpty());
+        }
+        
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())); // For H2 console
 
         return http.build();
     }
