@@ -93,15 +93,15 @@ public class SecurityConfig {
         // Configure OAuth2 if Azure AD is enabled
         if (isAzureEnabled()) {
             logger.info("Configuring OAuth2 Login for Azure AD");
-            // OAuth2 Login for redirect flow
+            // OAuth2 Login for redirect flow (browser login)
             http.oauth2Login(oauth2 -> oauth2
                 .defaultSuccessUrl("/api/auth/azure/success", true)
             );
             
-            // OAuth2 Resource Server for token validation
-            http.oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> {})
-            );
+            // NOTE: We do NOT enable oauth2ResourceServer here because:
+            // - We use our own local JWTs for API authentication (via JwtAuthenticationFilter)
+            // - oauth2ResourceServer would try to validate our local JWTs against Azure AD keys
+            // - Azure OAuth2 Login is only used for the initial browser login flow
             
             // Add Azure AD filter if available
             if (azureAdAuthenticationFilter != null) {
