@@ -7,8 +7,10 @@ import com.openflow.dto.UserInfoResponse;
 import com.openflow.model.User;
 import com.openflow.service.JwtService;
 import com.openflow.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -79,28 +81,61 @@ public class AuthController {
         }
     }
 
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:3000}")
+    private String frontendUrl;
+
     @GetMapping("/azure/success")
-    public ResponseEntity<?> azureAdSuccess() {
+    public ResponseEntity<?> azureAdSuccess(HttpServletResponse response) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             
             if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("{\"error\":\"Authentication failed\"}");
+                // Redirect to frontend with error
+                String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?error=authentication_failed";
+                response.sendRedirect(redirectUrl);
+                return null;
             }
             
             String username = authentication.getName();
             User user = userService.findByUsername(username);
             
-            // Generate JWT token for consistency with existing API
+            if (user == null) {
+                String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?error=user_not_found";
+                response.sendRedirect(redirectUrl);
+                return null;
+            }
+            
+            // Generate JWT token
             String token = jwtService.generateToken(user.getUsername());
             
-            AuthResponse response = new AuthResponse(token, user.getUsername());
-            return ResponseEntity.ok(response);
+            // Redirect to frontend with token
+            String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?token=" + 
+                java.net.URLEncoder.encode(token, "UTF-8") + 
+                "&username=" + java.net.URLEncoder.encode(user.getUsername(), "UTF-8");
+            
+            response.sendRedirect(redirectUrl);
+            return null;
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\":\"" + e.getMessage() + "\"}");
+            try {
+                String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?error=" + 
+                    java.net.URLEncoder.encode(e.getMessage(), "UTF-8");
+                response.sendRedirect(redirectUrl);
+            } catch (Exception ex) {
+                // Fallback
+            }
+            return null;
         }
+    }
+    
+    private String getFrontendBaseUrl() {
+        // Get first origin from CORS allowed origins
+        if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
+            String[] origins = frontendUrl.split(",");
+            if (origins.length > 0) {
+                return origins[0].trim();
+            }
+        }
+        return "http://localhost:3000";
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
