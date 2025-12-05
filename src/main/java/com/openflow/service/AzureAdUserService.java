@@ -3,6 +3,8 @@ package com.openflow.service;
 import com.openflow.model.User;
 import com.openflow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,41 @@ public class AzureAdUserService {
     private JwtService jwtService;
 
     /**
+     * Extract user information from OAuth2User (OAuth2 Login flow) and sync to local database.
+     * 
+     * @param oauth2User The OAuth2 user from Azure AD login
+     * @return User entity from database (created or updated)
+     */
+    public User findOrCreateFromOAuth2User(OAuth2User oauth2User) {
+        // Extract claims from OAuth2 user attributes
+        String azureAdId = oauth2User.getAttribute("sub"); // Subject claim
+        if (azureAdId == null) {
+            azureAdId = oauth2User.getAttribute("oid"); // Object ID as fallback
+        }
+        if (azureAdId == null) {
+            azureAdId = oauth2User.getName(); // Principal name as last resort
+        }
+        
+        String email = oauth2User.getAttribute("email");
+        if (email == null) {
+            email = oauth2User.getAttribute("preferred_username");
+        }
+        
+        String name = oauth2User.getAttribute("name");
+        String preferredUsername = oauth2User.getAttribute("preferred_username");
+        
+        // Use preferred_username or email as username, fallback to name
+        String username = preferredUsername != null ? preferredUsername : 
+                         (email != null ? email.split("@")[0] : 
+                         (name != null ? name.replaceAll("\\s+", "").toLowerCase() : azureAdId));
+        
+        // Ensure username is unique
+        username = ensureUniqueUsername(username, azureAdId);
+        
+        return syncUser(azureAdId, email, username);
+    }
+
+    /**
      * Extract user information from Azure AD JWT claims and sync to local database.
      * 
      * @param jwt The Azure AD JWT token
@@ -26,6 +63,9 @@ public class AzureAdUserService {
         // Extract claims from Azure AD JWT
         String azureAdId = jwt.getSubject(); // "sub" claim contains Azure AD object ID
         String email = jwt.getClaimAsString("email");
+        if (email == null) {
+            email = jwt.getClaimAsString("preferred_username");
+        }
         String name = jwt.getClaimAsString("name");
         String preferredUsername = jwt.getClaimAsString("preferred_username");
         
@@ -34,9 +74,16 @@ public class AzureAdUserService {
                          (email != null ? email.split("@")[0] : 
                          (name != null ? name.replaceAll("\\s+", "").toLowerCase() : azureAdId));
         
-        // Ensure username is unique by appending Azure AD ID if needed
+        // Ensure username is unique
         username = ensureUniqueUsername(username, azureAdId);
         
+        return syncUser(azureAdId, email, username);
+    }
+    
+    /**
+     * Common method to sync user from Azure AD to local database.
+     */
+    private User syncUser(String azureAdId, String email, String username) {
         // Find existing user by Azure AD ID
         Optional<User> existingUser = userRepository.findByAzureAdId(azureAdId);
         

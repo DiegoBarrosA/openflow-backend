@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -29,10 +32,40 @@ public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        // Check if we have an Azure AD JWT token in the security context
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        if (authentication instanceof JwtAuthenticationToken) {
+        // Handle OAuth2 Login flow (user logged in via browser redirect)
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauth2Auth = (OAuth2AuthenticationToken) authentication;
+            OAuth2User oauth2User = oauth2Auth.getPrincipal();
+            
+            try {
+                // Sync user from Azure AD to local database
+                User user = azureAdUserService.findOrCreateFromOAuth2User(oauth2User);
+                
+                // Create UserDetails for Spring Security
+                UserDetails userDetails = org.springframework.security.core.userdetails.User
+                        .withUsername(user.getUsername())
+                        .password(user.getPassword() != null ? user.getPassword() : "")
+                        .authorities(new ArrayList<>())
+                        .build();
+                
+                // Create authentication token with user details
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(authentication.getDetails());
+                
+                // Set authentication in context
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                
+                logger.info("Azure AD OAuth2 user authenticated: " + user.getUsername());
+                
+            } catch (Exception e) {
+                logger.error("Error processing Azure AD OAuth2 authentication", e);
+            }
+        }
+        // Handle JWT Resource Server flow (API calls with Bearer token)
+        else if (authentication instanceof JwtAuthenticationToken) {
             JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
             Jwt jwt = jwtAuth.getToken();
             
@@ -56,8 +89,7 @@ public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 
             } catch (Exception e) {
-                // Log error but don't fail the request
-                logger.error("Error processing Azure AD authentication", e);
+                logger.error("Error processing Azure AD JWT authentication", e);
             }
         }
         
