@@ -37,7 +37,7 @@ public class User {
     @Column(name = "azure_ad_id", unique = true, nullable = true)
     private String azureAdId;
 
-    @Column(name = "auth_provider", nullable = false)
+    @Column(name = "auth_provider", nullable = true)
     private String authProvider = "jwt";
 
     @Column(name = "created_at", nullable = false, updatable = false)
