@@ -66,10 +66,21 @@ public class SecurityConfig {
         logger.info("Azure OAuth enabled: {}", isAzureEnabled());
         
         http.csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/h2-console/**", "/oauth2/**", "/login/oauth2/**").permitAll()
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+        
+        // Session management: OAuth2 Login requires sessions, JWT is stateless
+        if (isAzureEnabled()) {
+            // Use IF_REQUIRED for OAuth2 Login flow (sessions needed for OAuth2 callback)
+            http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+            logger.info("Session policy: IF_REQUIRED (for OAuth2 Login)");
+        } else {
+            // Use STATELESS for pure JWT authentication
+            http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            logger.info("Session policy: STATELESS (JWT only)");
+        }
+        
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**", "/h2-console/**", "/oauth2/**", "/login/oauth2/**", "/login").permitAll()
                 .anyRequest().authenticated()
             );
         
