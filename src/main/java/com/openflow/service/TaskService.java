@@ -4,6 +4,7 @@ import com.openflow.dto.TaskDto;
 import com.openflow.model.Task;
 import com.openflow.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,14 @@ public class TaskService {
 
     @Autowired
     private StatusService statusService;
+
+    @Autowired
+    @Lazy
+    private ChangeLogService changeLogService;
+
+    @Autowired
+    @Lazy
+    private NotificationService notificationService;
 
     private TaskDto toDto(Task task) {
         return new TaskDto(
@@ -76,24 +85,87 @@ public class TaskService {
     public Task createTask(Task task, Long userId) {
         boardService.getBoardById(task.getBoardId(), userId); // Validate board access
         statusService.getStatusById(task.getStatusId(), userId); // Validate status exists and belongs to board
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        
+        // Log creation
+        changeLogService.logCreate(ChangeLogService.ENTITY_TASK, saved.getId(), userId);
+        
+        // Send notifications to board subscribers
+        notificationService.notifyEntityChange(
+            "BOARD", task.getBoardId(),
+            "TASK_CREATED",
+            "New task created: " + task.getTitle(),
+            userId
+        );
+        
+        return saved;
     }
 
     public Task updateTask(Long id, Task updatedTask, Long userId) {
         Task existingTask = getTaskById(id, userId);
+        boolean wasUpdated = false;
+        boolean wasMoved = false;
+        
+        // Log field changes
+        if (!existingTask.getTitle().equals(updatedTask.getTitle())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_TASK, id, userId,
+                "title", existingTask.getTitle(), updatedTask.getTitle());
+            wasUpdated = true;
+        }
         existingTask.setTitle(updatedTask.getTitle());
-        if (updatedTask.getDescription() != null) {
+        
+        if (updatedTask.getDescription() != null && 
+            !String.valueOf(updatedTask.getDescription()).equals(String.valueOf(existingTask.getDescription()))) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_TASK, id, userId,
+                "description", existingTask.getDescription(), updatedTask.getDescription());
             existingTask.setDescription(updatedTask.getDescription());
+            wasUpdated = true;
         }
-        if (updatedTask.getStatusId() != null) {
+        
+        if (updatedTask.getStatusId() != null && !updatedTask.getStatusId().equals(existingTask.getStatusId())) {
             statusService.getStatusById(updatedTask.getStatusId(), userId); // Validate status
+            changeLogService.logMove(ChangeLogService.ENTITY_TASK, id, userId,
+                String.valueOf(existingTask.getStatusId()), String.valueOf(updatedTask.getStatusId()));
             existingTask.setStatusId(updatedTask.getStatusId());
+            wasMoved = true;
         }
-        return taskRepository.save(existingTask);
+        
+        Task saved = taskRepository.save(existingTask);
+        
+        // Send notifications
+        if (wasMoved) {
+            notificationService.notifyEntityChange(
+                "TASK", id,
+                "TASK_MOVED",
+                "Task moved: " + existingTask.getTitle(),
+                userId
+            );
+        } else if (wasUpdated) {
+            notificationService.notifyEntityChange(
+                "TASK", id,
+                "TASK_UPDATED",
+                "Task updated: " + existingTask.getTitle(),
+                userId
+            );
+        }
+        
+        return saved;
     }
 
     public void deleteTask(Long id, Long userId) {
         Task task = getTaskById(id, userId);
+        
+        // Log deletion before deleting
+        changeLogService.logDelete(ChangeLogService.ENTITY_TASK, id, userId);
+        
+        // Send notifications to task subscribers
+        notificationService.notifyEntityChange(
+            "TASK", id,
+            "TASK_DELETED",
+            "Task deleted: " + task.getTitle(),
+            userId
+        );
+        
         taskRepository.delete(task);
     }
 

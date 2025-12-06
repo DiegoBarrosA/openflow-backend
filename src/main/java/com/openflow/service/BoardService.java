@@ -4,6 +4,7 @@ import com.openflow.dto.BoardDto;
 import com.openflow.model.Board;
 import com.openflow.repository.BoardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,10 @@ import java.util.List;
 public class BoardService {
     @Autowired
     private BoardRepository boardRepository;
+
+    @Autowired
+    @Lazy
+    private ChangeLogService changeLogService;
 
     private BoardDto toDto(Board board) {
         return new BoardDto(
@@ -67,19 +72,47 @@ public class BoardService {
 
     public Board createBoard(Board board, Long userId) {
         board.setUserId(userId);
-        return boardRepository.save(board);
+        Board saved = boardRepository.save(board);
+        
+        // Log creation
+        changeLogService.logCreate(ChangeLogService.ENTITY_BOARD, saved.getId(), userId);
+        
+        return saved;
     }
 
     public Board updateBoard(Long id, Board updatedBoard, Long userId) {
         Board existingBoard = getBoardById(id, userId);
+        
+        // Log field changes
+        if (!existingBoard.getName().equals(updatedBoard.getName())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_BOARD, id, userId,
+                "name", existingBoard.getName(), updatedBoard.getName());
+        }
         existingBoard.setName(updatedBoard.getName());
+        
+        if (updatedBoard.getDescription() != null && 
+            !String.valueOf(updatedBoard.getDescription()).equals(String.valueOf(existingBoard.getDescription()))) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_BOARD, id, userId,
+                "description", existingBoard.getDescription(), updatedBoard.getDescription());
+        }
         existingBoard.setDescription(updatedBoard.getDescription());
-        existingBoard.setIsPublic(updatedBoard.getIsPublic() != null ? updatedBoard.getIsPublic() : existingBoard.getIsPublic());
+        
+        Boolean newIsPublic = updatedBoard.getIsPublic() != null ? updatedBoard.getIsPublic() : existingBoard.getIsPublic();
+        if (!newIsPublic.equals(existingBoard.getIsPublic())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_BOARD, id, userId,
+                "isPublic", String.valueOf(existingBoard.getIsPublic()), String.valueOf(newIsPublic));
+        }
+        existingBoard.setIsPublic(newIsPublic);
+        
         return boardRepository.save(existingBoard);
     }
 
     public void deleteBoard(Long id, Long userId) {
         Board board = getBoardById(id, userId);
+        
+        // Log deletion before deleting
+        changeLogService.logDelete(ChangeLogService.ENTITY_BOARD, id, userId);
+        
         boardRepository.delete(board);
     }
 

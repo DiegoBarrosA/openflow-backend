@@ -5,6 +5,7 @@ import com.openflow.model.Status;
 import com.openflow.repository.BoardRepository;
 import com.openflow.repository.StatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +20,10 @@ public class StatusService {
 
     @Autowired
     private BoardService boardService;
+
+    @Autowired
+    @Lazy
+    private ChangeLogService changeLogService;
 
     private StatusDto toDto(Status status) {
         return new StatusDto(
@@ -80,23 +85,45 @@ public class StatusService {
             status.setOrder(existingStatuses.size());
         }
         
-        return statusRepository.save(status);
+        Status saved = statusRepository.save(status);
+        
+        // Log creation
+        changeLogService.logCreate(ChangeLogService.ENTITY_STATUS, saved.getId(), userId);
+        
+        return saved;
     }
 
     public Status updateStatus(Long id, Status updatedStatus, Long userId) {
         Status existingStatus = getStatusById(id, userId);
+        
+        // Log field changes
+        if (!existingStatus.getName().equals(updatedStatus.getName())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_STATUS, id, userId,
+                "name", existingStatus.getName(), updatedStatus.getName());
+        }
         existingStatus.setName(updatedStatus.getName());
-        if (updatedStatus.getColor() != null) {
+        
+        if (updatedStatus.getColor() != null && !updatedStatus.getColor().equals(existingStatus.getColor())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_STATUS, id, userId,
+                "color", existingStatus.getColor(), updatedStatus.getColor());
             existingStatus.setColor(updatedStatus.getColor());
         }
-        if (updatedStatus.getOrder() != null) {
+        
+        if (updatedStatus.getOrder() != null && !updatedStatus.getOrder().equals(existingStatus.getOrder())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_STATUS, id, userId,
+                "order", String.valueOf(existingStatus.getOrder()), String.valueOf(updatedStatus.getOrder()));
             existingStatus.setOrder(updatedStatus.getOrder());
         }
+        
         return statusRepository.save(existingStatus);
     }
 
     public void deleteStatus(Long id, Long userId) {
         Status status = getStatusById(id, userId);
+        
+        // Log deletion before deleting
+        changeLogService.logDelete(ChangeLogService.ENTITY_STATUS, id, userId);
+        
         statusRepository.delete(status);
     }
 
