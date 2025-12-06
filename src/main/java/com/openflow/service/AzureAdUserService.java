@@ -136,6 +136,11 @@ public class AzureAdUserService {
         logger.info("Admin Group ID configured: {}", adminGroupId);
         logger.info("All claims received: {}", claims.keySet());
         
+        // Log ALL claim values for debugging
+        for (Map.Entry<String, Object> entry : claims.entrySet()) {
+            logger.info("Claim [{}] = {}", entry.getKey(), entry.getValue());
+        }
+        
         // Check Azure AD Groups (via "groups" claim)
         Object groupsClaim = claims.get("groups");
         logger.info("Groups claim value: {}", groupsClaim);
@@ -160,6 +165,7 @@ public class AzureAdUserService {
         
         // Check Azure AD App Roles (via "roles" claim)
         Object rolesClaim = claims.get("roles");
+        logger.info("Roles claim value: {}", rolesClaim);
         if (rolesClaim != null) {
             List<String> appRoles = null;
             if (rolesClaim instanceof List) {
