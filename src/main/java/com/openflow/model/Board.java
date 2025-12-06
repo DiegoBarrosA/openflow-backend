@@ -30,7 +30,7 @@ public class Board {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "is_public", nullable = false)
+    @Column(name = "is_public", nullable = true)
     private Boolean isPublic = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)

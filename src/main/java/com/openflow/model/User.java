@@ -41,7 +41,7 @@ public class User {
     private String authProvider = "jwt";
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Role role = Role.USER;
 
     @Column(name = "created_at", nullable = false, updatable = false)
