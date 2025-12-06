@@ -31,5 +31,7 @@ public class CustomFieldDefinitionDto {
     private Integer displayOrder;
     
     private Boolean isRequired;
+    
+    private Boolean showInCard;
 }
 

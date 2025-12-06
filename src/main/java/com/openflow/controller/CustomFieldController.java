@@ -101,6 +101,18 @@ public class CustomFieldController {
     }
 
     /**
+     * Get visible custom field values for a task (fields marked as showInCard).
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @GetMapping("/values/task/{taskId}/visible")
+    public ResponseEntity<List<CustomFieldValueDto>> getTaskVisibleFieldValues(
+            @PathVariable Long taskId,
+            @RequestParam Long boardId) {
+        List<CustomFieldValueDto> values = customFieldService.getTaskVisibleFieldValues(taskId, boardId);
+        return ResponseEntity.ok(values);
+    }
+
+    /**
      * Set a single custom field value for a task.
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")

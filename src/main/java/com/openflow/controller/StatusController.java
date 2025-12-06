@@ -110,5 +110,24 @@ public class StatusController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /**
+     * Reorder statuses for a board.
+     * ADMIN only.
+     */
+    @PutMapping("/board/{boardId}/reorder")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<StatusDto>> reorderStatuses(
+            @PathVariable Long boardId,
+            @RequestBody List<Long> statusIds,
+            Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            List<StatusDto> reordered = statusService.reorderStatuses(boardId, statusIds, userId);
+            return ResponseEntity.ok(reordered);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
 

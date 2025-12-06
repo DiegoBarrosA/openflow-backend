@@ -57,6 +57,17 @@ public class CustomFieldService {
     public CustomFieldDefinitionDto createFieldDefinition(CustomFieldDefinitionDto dto, Long userId) {
         boardService.getBoardById(dto.getBoardId(), userId); // Validate access
         
+        // Check if we're trying to add a showInCard field and there are already 3
+        if (dto.getShowInCard() != null && dto.getShowInCard()) {
+            long currentShowInCardCount = definitionRepository.findByBoardIdOrderByDisplayOrderAsc(dto.getBoardId())
+                    .stream()
+                    .filter(d -> d.getShowInCard() != null && d.getShowInCard())
+                    .count();
+            if (currentShowInCardCount >= 3) {
+                throw new RuntimeException("Maximum of 3 fields can be shown in card");
+            }
+        }
+        
         CustomFieldDefinition definition = new CustomFieldDefinition();
         definition.setBoardId(dto.getBoardId());
         definition.setName(dto.getName());
@@ -64,6 +75,7 @@ public class CustomFieldService {
         definition.setOptions(serializeOptions(dto.getOptions()));
         definition.setDisplayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0);
         definition.setIsRequired(dto.getIsRequired() != null ? dto.getIsRequired() : false);
+        definition.setShowInCard(dto.getShowInCard() != null ? dto.getShowInCard() : false);
         
         CustomFieldDefinition saved = definitionRepository.save(definition);
         
@@ -82,6 +94,20 @@ public class CustomFieldService {
         
         boardService.getBoardById(existing.getBoardId(), userId); // Validate access
         
+        // Check if we're trying to enable showInCard and there are already 3 (excluding current)
+        Boolean newShowInCard = dto.getShowInCard() != null ? dto.getShowInCard() : existing.getShowInCard();
+        Boolean currentShowInCard = existing.getShowInCard() != null ? existing.getShowInCard() : false;
+        
+        if (newShowInCard && !currentShowInCard) {
+            long currentShowInCardCount = definitionRepository.findByBoardIdOrderByDisplayOrderAsc(existing.getBoardId())
+                    .stream()
+                    .filter(d -> d.getShowInCard() != null && d.getShowInCard() && !d.getId().equals(id))
+                    .count();
+            if (currentShowInCardCount >= 3) {
+                throw new RuntimeException("Maximum of 3 fields can be shown in card");
+            }
+        }
+        
         if (!existing.getName().equals(dto.getName())) {
             changeLogService.logFieldChange("CUSTOM_FIELD", id, userId, 
                 "name", existing.getName(), dto.getName());
@@ -92,6 +118,7 @@ public class CustomFieldService {
         existing.setOptions(serializeOptions(dto.getOptions()));
         existing.setDisplayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : existing.getDisplayOrder());
         existing.setIsRequired(dto.getIsRequired() != null ? dto.getIsRequired() : existing.getIsRequired());
+        existing.setShowInCard(newShowInCard);
         
         return toDefinitionDto(definitionRepository.save(existing));
     }
@@ -137,6 +164,39 @@ public class CustomFieldService {
         
         return values.stream()
                 .map(value -> toValueDto(value, definitionMap.get(value.getFieldDefinitionId())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get visible custom field values for a task (fields with showInCard=true).
+     */
+    public List<CustomFieldValueDto> getTaskVisibleFieldValues(Long taskId, Long boardId) {
+        // Get definitions that should be shown in card
+        List<CustomFieldDefinition> visibleDefinitions = definitionRepository.findByBoardIdOrderByDisplayOrderAsc(boardId)
+                .stream()
+                .filter(d -> d.getShowInCard() != null && d.getShowInCard())
+                .limit(3)
+                .collect(Collectors.toList());
+        
+        if (visibleDefinitions.isEmpty()) {
+            return List.of();
+        }
+        
+        // Get values for these definitions
+        List<CustomFieldValue> values = valueRepository.findByTaskId(taskId);
+        Map<Long, String> valueMap = values.stream()
+                .collect(Collectors.toMap(CustomFieldValue::getFieldDefinitionId, CustomFieldValue::getValue, (a, b) -> a));
+        
+        // Create DTOs with values (or empty if no value set)
+        return visibleDefinitions.stream()
+                .map(def -> {
+                    CustomFieldValueDto dto = new CustomFieldValueDto();
+                    dto.setFieldDefinitionId(def.getId());
+                    dto.setFieldName(def.getName());
+                    dto.setFieldType(def.getFieldType());
+                    dto.setValue(valueMap.getOrDefault(def.getId(), ""));
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -193,6 +253,7 @@ public class CustomFieldService {
         dto.setOptions(deserializeOptions(definition.getOptions()));
         dto.setDisplayOrder(definition.getDisplayOrder());
         dto.setIsRequired(definition.getIsRequired());
+        dto.setShowInCard(definition.getShowInCard());
         return dto;
     }
 

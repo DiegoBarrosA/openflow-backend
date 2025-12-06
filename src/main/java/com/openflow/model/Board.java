@@ -33,6 +33,9 @@ public class Board {
     @Column(name = "is_public", nullable = true)
     private Boolean isPublic = false;
 
+    @Column(name = "is_template", nullable = true)
+    private Boolean isTemplate = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

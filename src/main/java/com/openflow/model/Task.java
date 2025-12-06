@@ -33,6 +33,9 @@ public class Task {
     @Column(name = "board_id", nullable = false)
     private Long boardId;
 
+    @Column(name = "assigned_user_id")
+    private Long assignedUserId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

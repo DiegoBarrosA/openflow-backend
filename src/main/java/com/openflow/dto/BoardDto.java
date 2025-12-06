@@ -6,6 +6,7 @@ public class BoardDto {
     private String description;
     private Long userId;
     private Boolean isPublic;
+    private Boolean isTemplate;
 
     public BoardDto() {}
 
@@ -15,6 +16,7 @@ public class BoardDto {
         this.description = description;
         this.userId = userId;
         this.isPublic = false;
+        this.isTemplate = false;
     }
 
     public BoardDto(Long id, String name, String description, Long userId, Boolean isPublic) {
@@ -23,6 +25,16 @@ public class BoardDto {
         this.description = description;
         this.userId = userId;
         this.isPublic = isPublic;
+        this.isTemplate = false;
+    }
+
+    public BoardDto(Long id, String name, String description, Long userId, Boolean isPublic, Boolean isTemplate) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.userId = userId;
+        this.isPublic = isPublic;
+        this.isTemplate = isTemplate;
     }
 
     public Long getId() { return id; }
@@ -39,4 +51,7 @@ public class BoardDto {
 
     public Boolean getIsPublic() { return isPublic; }
     public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }
+
+    public Boolean getIsTemplate() { return isTemplate; }
+    public void setIsTemplate(Boolean isTemplate) { this.isTemplate = isTemplate; }
 }

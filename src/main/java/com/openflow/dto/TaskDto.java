@@ -1,6 +1,7 @@
 package com.openflow.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public class TaskDto {
     private Long id;
@@ -8,7 +9,10 @@ public class TaskDto {
     private String description;
     private Long statusId;
     private Long boardId;
+    private Long assignedUserId;
+    private String assignedUsername;
     private LocalDateTime createdAt;
+    private Map<Long, String> customFieldValues; // fieldDefinitionId -> value
 
     public TaskDto() {}
 
@@ -19,6 +23,27 @@ public class TaskDto {
         this.statusId = statusId;
         this.boardId = boardId;
         this.createdAt = createdAt;
+    }
+
+    public TaskDto(Long id, String title, String description, Long statusId, Long boardId, Long assignedUserId, String assignedUsername, LocalDateTime createdAt) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.statusId = statusId;
+        this.boardId = boardId;
+        this.assignedUserId = assignedUserId;
+        this.assignedUsername = assignedUsername;
+        this.createdAt = createdAt;
+    }
+
+    public TaskDto(Long id, String title, String description, Long statusId, Long boardId, LocalDateTime createdAt, Map<Long, String> customFieldValues) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.statusId = statusId;
+        this.boardId = boardId;
+        this.createdAt = createdAt;
+        this.customFieldValues = customFieldValues;
     }
 
     public Long getId() { return id; }
@@ -38,4 +63,13 @@ public class TaskDto {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Long getAssignedUserId() { return assignedUserId; }
+    public void setAssignedUserId(Long assignedUserId) { this.assignedUserId = assignedUserId; }
+
+    public String getAssignedUsername() { return assignedUsername; }
+    public void setAssignedUsername(String assignedUsername) { this.assignedUsername = assignedUsername; }
+
+    public Map<Long, String> getCustomFieldValues() { return customFieldValues; }
+    public void setCustomFieldValues(Map<Long, String> customFieldValues) { this.customFieldValues = customFieldValues; }
 }

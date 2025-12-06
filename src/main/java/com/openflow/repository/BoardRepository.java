@@ -14,5 +14,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     List<Board> findByIsPublicTrue();
     
     Optional<Board> findByIdAndIsPublicTrue(Long id);
+    
+    List<Board> findByUserIdAndIsTemplateTrue(Long userId);
 }
 

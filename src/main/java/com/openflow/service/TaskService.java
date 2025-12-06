@@ -2,13 +2,16 @@ package com.openflow.service;
 
 import com.openflow.dto.TaskDto;
 import com.openflow.model.Task;
+import com.openflow.model.User;
 import com.openflow.repository.TaskRepository;
+import com.openflow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TaskService {
@@ -22,6 +25,9 @@ public class TaskService {
     private StatusService statusService;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     @Lazy
     private ChangeLogService changeLogService;
 
@@ -29,13 +35,25 @@ public class TaskService {
     @Lazy
     private NotificationService notificationService;
 
+    @Autowired
+    @Lazy
+    private CustomFieldService customFieldService;
+
     private TaskDto toDto(Task task) {
+        String assignedUsername = null;
+        if (task.getAssignedUserId() != null) {
+            assignedUsername = userRepository.findById(task.getAssignedUserId())
+                    .map(User::getUsername)
+                    .orElse(null);
+        }
         return new TaskDto(
             task.getId(),
             task.getTitle(),
             task.getDescription(),
             task.getStatusId(),
             task.getBoardId(),
+            task.getAssignedUserId(),
+            assignedUsername,
             task.getCreatedAt()
         );
     }
@@ -47,6 +65,7 @@ public class TaskService {
         task.setDescription(dto.getDescription());
         task.setStatusId(dto.getStatusId());
         task.setBoardId(dto.getBoardId());
+        task.setAssignedUserId(dto.getAssignedUserId());
         task.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now());
         return task;
     }
@@ -62,6 +81,13 @@ public class TaskService {
     public TaskDto createTaskDto(TaskDto taskDto, Long userId) {
         Task task = toEntity(taskDto);
         Task created = createTask(task, userId);
+        
+        // Save custom field values if provided
+        Map<Long, String> customFieldValues = taskDto.getCustomFieldValues();
+        if (customFieldValues != null && !customFieldValues.isEmpty()) {
+            customFieldService.setFieldValues(created.getId(), customFieldValues, userId);
+        }
+        
         return toDto(created);
     }
 
@@ -128,6 +154,26 @@ public class TaskService {
                 String.valueOf(existingTask.getStatusId()), String.valueOf(updatedTask.getStatusId()));
             existingTask.setStatusId(updatedTask.getStatusId());
             wasMoved = true;
+        }
+        
+        // Handle assignedUserId change
+        Long newAssignedUserId = updatedTask.getAssignedUserId();
+        Long existingAssignedUserId = existingTask.getAssignedUserId();
+        
+        if ((newAssignedUserId == null && existingAssignedUserId != null) ||
+            (newAssignedUserId != null && !newAssignedUserId.equals(existingAssignedUserId))) {
+            
+            String oldUsername = existingAssignedUserId != null 
+                ? userRepository.findById(existingAssignedUserId).map(User::getUsername).orElse("none")
+                : "none";
+            String newUsername = newAssignedUserId != null 
+                ? userRepository.findById(newAssignedUserId).map(User::getUsername).orElse("none")
+                : "none";
+            
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_TASK, id, userId,
+                "assignedUser", oldUsername, newUsername);
+            existingTask.setAssignedUserId(newAssignedUserId);
+            wasUpdated = true;
         }
         
         Task saved = taskRepository.save(existingTask);

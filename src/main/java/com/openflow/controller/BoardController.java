@@ -106,5 +106,40 @@ public class BoardController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /**
+     * Get all templates for the current user.
+     * ADMIN only.
+     */
+    @GetMapping("/templates")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<BoardDto>> getTemplates(Authentication authentication) {
+        Long userId = getCurrentUserId(authentication);
+        List<BoardDto> templates = boardService.getTemplatesDto(userId);
+        return ResponseEntity.ok(templates);
+    }
+
+    /**
+     * Create a board from a template.
+     * ADMIN only.
+     */
+    @PostMapping("/from-template/{templateId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BoardDto> createBoardFromTemplate(
+            @PathVariable Long templateId,
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            String newBoardName = body.get("name");
+            if (newBoardName == null || newBoardName.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            BoardDto newBoard = boardService.createBoardFromTemplate(templateId, newBoardName, userId);
+            return ResponseEntity.ok(newBoard);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
 

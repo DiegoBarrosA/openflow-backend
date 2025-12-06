@@ -128,6 +128,37 @@ public class StatusService {
     }
 
     /**
+     * Reorder statuses for a board.
+     * @param boardId The board ID
+     * @param statusIds Ordered list of status IDs in their new order
+     * @param userId The user ID for authorization
+     * @return Updated list of statuses
+     */
+    public List<StatusDto> reorderStatuses(Long boardId, List<Long> statusIds, Long userId) {
+        boardService.getBoardById(boardId, userId); // Validate board access
+        
+        List<Status> statuses = statusRepository.findByBoardIdOrderByOrderAsc(boardId);
+        
+        // Update order for each status
+        for (int i = 0; i < statusIds.size(); i++) {
+            Long statusId = statusIds.get(i);
+            for (Status status : statuses) {
+                if (status.getId().equals(statusId)) {
+                    if (!status.getOrder().equals(i)) {
+                        changeLogService.logFieldChange(ChangeLogService.ENTITY_STATUS, statusId, userId,
+                            "order", String.valueOf(status.getOrder()), String.valueOf(i));
+                        status.setOrder(i);
+                        statusRepository.save(status);
+                    }
+                    break;
+                }
+            }
+        }
+        
+        return getStatusesByBoardIdDto(boardId, userId);
+    }
+
+    /**
      * Get statuses for a public board (no user validation).
      */
     public List<StatusDto> getStatusesByBoardIdDtoPublic(Long boardId) {

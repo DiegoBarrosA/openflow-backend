@@ -2,10 +2,15 @@ package com.openflow.service;
 
 import com.openflow.dto.BoardDto;
 import com.openflow.model.Board;
+import com.openflow.model.CustomFieldDefinition;
+import com.openflow.model.Status;
 import com.openflow.repository.BoardRepository;
+import com.openflow.repository.CustomFieldDefinitionRepository;
+import com.openflow.repository.StatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -13,6 +18,12 @@ import java.util.List;
 public class BoardService {
     @Autowired
     private BoardRepository boardRepository;
+
+    @Autowired
+    private StatusRepository statusRepository;
+
+    @Autowired
+    private CustomFieldDefinitionRepository customFieldDefinitionRepository;
 
     @Autowired
     @Lazy
@@ -24,7 +35,8 @@ public class BoardService {
             board.getName(),
             board.getDescription(),
             board.getUserId(),
-            board.getIsPublic()
+            board.getIsPublic(),
+            board.getIsTemplate()
         );
     }
 
@@ -35,6 +47,7 @@ public class BoardService {
         board.setDescription(dto.getDescription());
         board.setUserId(dto.getUserId());
         board.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : false);
+        board.setIsTemplate(dto.getIsTemplate() != null ? dto.getIsTemplate() : false);
         return board;
     }
 
@@ -104,6 +117,14 @@ public class BoardService {
         }
         existingBoard.setIsPublic(newIsPublic);
         
+        Boolean newIsTemplate = updatedBoard.getIsTemplate() != null ? updatedBoard.getIsTemplate() : existingBoard.getIsTemplate();
+        if (newIsTemplate == null) newIsTemplate = false;
+        if (!newIsTemplate.equals(existingBoard.getIsTemplate())) {
+            changeLogService.logFieldChange(ChangeLogService.ENTITY_BOARD, id, userId,
+                "isTemplate", String.valueOf(existingBoard.getIsTemplate()), String.valueOf(newIsTemplate));
+        }
+        existingBoard.setIsTemplate(newIsTemplate);
+        
         return boardRepository.save(existingBoard);
     }
 
@@ -130,5 +151,65 @@ public class BoardService {
     public Board getPublicBoardById(Long id) {
         return boardRepository.findByIdAndIsPublicTrue(id)
                 .orElseThrow(() -> new RuntimeException("Public board not found"));
+    }
+
+    // Template methods
+    public List<BoardDto> getTemplatesDto(Long userId) {
+        return boardRepository.findByUserIdAndIsTemplateTrue(userId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    /**
+     * Create a new board from a template.
+     * Copies statuses and custom field definitions from the template.
+     */
+    @Transactional
+    public BoardDto createBoardFromTemplate(Long templateId, String newBoardName, Long userId) {
+        Board template = getBoardById(templateId, userId);
+        
+        if (template.getIsTemplate() == null || !template.getIsTemplate()) {
+            throw new RuntimeException("Source board is not a template");
+        }
+        
+        // Create new board
+        Board newBoard = new Board();
+        newBoard.setName(newBoardName);
+        newBoard.setDescription(template.getDescription());
+        newBoard.setUserId(userId);
+        newBoard.setIsPublic(false);
+        newBoard.setIsTemplate(false);
+        
+        Board savedBoard = boardRepository.save(newBoard);
+        
+        // Log creation
+        changeLogService.logCreate(ChangeLogService.ENTITY_BOARD, savedBoard.getId(), userId);
+        
+        // Copy statuses
+        List<Status> templateStatuses = statusRepository.findByBoardIdOrderByOrderAsc(templateId);
+        for (Status status : templateStatuses) {
+            Status newStatus = new Status();
+            newStatus.setName(status.getName());
+            newStatus.setColor(status.getColor());
+            newStatus.setBoardId(savedBoard.getId());
+            newStatus.setOrder(status.getOrder());
+            statusRepository.save(newStatus);
+        }
+        
+        // Copy custom field definitions
+        List<CustomFieldDefinition> templateFields = customFieldDefinitionRepository.findByBoardIdOrderByDisplayOrderAsc(templateId);
+        for (CustomFieldDefinition field : templateFields) {
+            CustomFieldDefinition newField = new CustomFieldDefinition();
+            newField.setName(field.getName());
+            newField.setFieldType(field.getFieldType());
+            newField.setOptions(field.getOptions());
+            newField.setDisplayOrder(field.getDisplayOrder());
+            newField.setIsRequired(field.getIsRequired());
+            newField.setBoardId(savedBoard.getId());
+            customFieldDefinitionRepository.save(newField);
+        }
+        
+        return toDto(savedBoard);
     }
 }

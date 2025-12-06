@@ -40,6 +40,9 @@ public class CustomFieldDefinition {
     @Column(name = "is_required")
     private Boolean isRequired = false;
 
+    @Column(name = "show_in_card")
+    private Boolean showInCard = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
