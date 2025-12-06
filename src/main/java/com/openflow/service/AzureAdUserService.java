@@ -131,8 +131,14 @@ public class AzureAdUserService {
      */
     @SuppressWarnings("unchecked")
     private Role extractRoleFromClaims(Map<String, Object> claims) {
+        // Log all claims for debugging
+        logger.info("=== Azure AD Claims Debug ===");
+        logger.info("Admin Group ID configured: {}", adminGroupId);
+        logger.info("All claims received: {}", claims.keySet());
+        
         // Check Azure AD Groups (via "groups" claim)
         Object groupsClaim = claims.get("groups");
+        logger.info("Groups claim value: {}", groupsClaim);
         if (groupsClaim != null) {
             List<String> groups = null;
             if (groupsClaim instanceof List) {
