@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
     
@@ -80,7 +82,12 @@ public class SecurityConfig {
         }
         
         http.authorizeHttpRequests(auth -> auth
+                // Public endpoints - no authentication required
                 .requestMatchers("/api/auth/**", "/h2-console/**", "/oauth2/**", "/login/oauth2/**", "/login").permitAll()
+                // Public board endpoints - anonymous access allowed
+                .requestMatchers("/api/public/**").permitAll()
+                // All other requests require authentication
+                // Role-based authorization is handled via @PreAuthorize annotations on controllers
                 .anyRequest().authenticated()
             );
         

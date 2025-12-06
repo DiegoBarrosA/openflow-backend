@@ -7,11 +7,17 @@ import com.openflow.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Task management endpoints.
+ * All task operations are available to both ADMIN and USER roles.
+ * Users can create, move, modify, and delete tasks.
+ */
 @RestController
 @RequestMapping("/api/tasks")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -27,7 +33,12 @@ public class TaskController {
         return userService.findByUsername(username).getId();
     }
 
+    /**
+     * Get all tasks for a board.
+     * Available to ADMIN and USER.
+     */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<TaskDto>> getTasks(@RequestParam Long boardId, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -38,7 +49,12 @@ public class TaskController {
         }
     }
 
+    /**
+     * Get a specific task by ID.
+     * Available to ADMIN and USER.
+     */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<TaskDto> getTask(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -49,7 +65,12 @@ public class TaskController {
         }
     }
 
+    /**
+     * Create a new task.
+     * Available to ADMIN and USER.
+     */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<TaskDto> createTask(@Valid @RequestBody TaskDto taskDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -60,7 +81,12 @@ public class TaskController {
         }
     }
 
+    /**
+     * Update an existing task (including moving to different status).
+     * Available to ADMIN and USER.
+     */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<TaskDto> updateTask(@PathVariable Long id, @Valid @RequestBody TaskDto taskDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -71,7 +97,12 @@ public class TaskController {
         }
     }
 
+    /**
+     * Delete a task.
+     * Available to ADMIN and USER.
+     */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);

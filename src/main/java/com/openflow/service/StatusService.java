@@ -99,4 +99,14 @@ public class StatusService {
         Status status = getStatusById(id, userId);
         statusRepository.delete(status);
     }
+
+    /**
+     * Get statuses for a public board (no user validation).
+     */
+    public List<StatusDto> getStatusesByBoardIdDtoPublic(Long boardId) {
+        return statusRepository.findByBoardIdOrderByOrderAsc(boardId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
 }

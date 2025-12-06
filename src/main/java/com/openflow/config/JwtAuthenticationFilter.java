@@ -1,5 +1,6 @@
 package com.openflow.config;
 
+import com.openflow.model.Role;
 import com.openflow.service.JwtService;
 import com.openflow.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -8,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -16,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -45,10 +49,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 com.openflow.model.User user = userService.findByUsername(username);
                 if (jwtService.validateToken(token, username)) {
+                    // Extract role from token and create authorities
+                    Role role = jwtService.extractRole(token);
+                    List<GrantedAuthority> authorities = new ArrayList<>();
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+                    
                     UserDetails userDetails = org.springframework.security.core.userdetails.User
                             .withUsername(user.getUsername())
-                            .password(user.getPassword())
-                            .authorities(new ArrayList<>())
+                            .password(user.getPassword() != null ? user.getPassword() : "")
+                            .authorities(authorities)
                             .build();
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

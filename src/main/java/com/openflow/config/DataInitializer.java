@@ -1,5 +1,6 @@
 package com.openflow.config;
 
+import com.openflow.model.Role;
 import com.openflow.model.User;
 import com.openflow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,9 @@ public class DataInitializer implements CommandLineRunner {
             admin.setUsername("admin");
             admin.setEmail("admin@openflow.com");
             admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setRole(Role.ADMIN);
             userRepository.save(admin);
-            System.out.println("Default admin user created: username=admin, password=admin123");
+            System.out.println("Default admin user created: username=admin, password=admin123, role=ADMIN");
         }
 
         // Create default demo user if it doesn't exist
@@ -33,8 +35,9 @@ public class DataInitializer implements CommandLineRunner {
             demo.setUsername("demo");
             demo.setEmail("demo@openflow.com");
             demo.setPassword(passwordEncoder.encode("demo123"));
+            demo.setRole(Role.USER);
             userRepository.save(demo);
-            System.out.println("Default demo user created: username=demo, password=demo123");
+            System.out.println("Default demo user created: username=demo, password=demo123, role=USER");
         }
     }
 }

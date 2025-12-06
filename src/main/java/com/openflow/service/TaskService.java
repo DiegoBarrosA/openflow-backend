@@ -96,4 +96,14 @@ public class TaskService {
         Task task = getTaskById(id, userId);
         taskRepository.delete(task);
     }
+
+    /**
+     * Get tasks for a public board (no user validation).
+     */
+    public List<TaskDto> getTasksByBoardIdDtoPublic(Long boardId) {
+        return taskRepository.findByBoardId(boardId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
 }

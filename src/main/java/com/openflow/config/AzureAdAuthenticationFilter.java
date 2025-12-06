@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -21,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
@@ -40,14 +43,18 @@ public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
             OAuth2User oauth2User = oauth2Auth.getPrincipal();
             
             try {
-                // Sync user from Azure AD to local database
+                // Sync user from Azure AD to local database (role extracted from claims)
                 User user = azureAdUserService.findOrCreateFromOAuth2User(oauth2User);
+                
+                // Create authorities based on user role
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
                 
                 // Create UserDetails for Spring Security
                 UserDetails userDetails = org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPassword() != null ? user.getPassword() : "")
-                        .authorities(new ArrayList<>())
+                        .authorities(authorities)
                         .build();
                 
                 // Create authentication token with user details
@@ -58,7 +65,7 @@ public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
                 // Set authentication in context
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 
-                logger.info("Azure AD OAuth2 user authenticated: " + user.getUsername());
+                logger.info("Azure AD OAuth2 user authenticated: " + user.getUsername() + " with role: " + user.getRole());
                 
             } catch (Exception e) {
                 logger.error("Error processing Azure AD OAuth2 authentication", e);
@@ -70,14 +77,18 @@ public class AzureAdAuthenticationFilter extends OncePerRequestFilter {
             Jwt jwt = jwtAuth.getToken();
             
             try {
-                // Sync user from Azure AD to local database
+                // Sync user from Azure AD to local database (role extracted from claims)
                 User user = azureAdUserService.findOrCreateFromAzureAd(jwt);
+                
+                // Create authorities based on user role
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
                 
                 // Create UserDetails for Spring Security
                 UserDetails userDetails = org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPassword() != null ? user.getPassword() : "")
-                        .authorities(new ArrayList<>())
+                        .authorities(authorities)
                         .build();
                 
                 // Create authentication token with user details

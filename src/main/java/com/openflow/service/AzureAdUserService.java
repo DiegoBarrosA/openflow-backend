@@ -1,22 +1,42 @@
 package com.openflow.service;
 
+import com.openflow.model.Role;
 import com.openflow.model.User;
 import com.openflow.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class AzureAdUserService {
+    private static final Logger logger = LoggerFactory.getLogger(AzureAdUserService.class);
+    
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private JwtService jwtService;
+    
+    // Azure AD Group IDs for role mapping
+    @Value("${azure.ad.admin-group-id:}")
+    private String adminGroupId;
+    
+    @Value("${azure.ad.user-group-id:}")
+    private String userGroupId;
+    
+    // App Role names for role mapping
+    private static final String ADMIN_APP_ROLE = "Admin";
+    private static final String USER_APP_ROLE = "User";
 
     /**
      * Extract user information from OAuth2User (OAuth2 Login flow) and sync to local database.
@@ -50,7 +70,10 @@ public class AzureAdUserService {
         // Ensure username is unique
         username = ensureUniqueUsername(username, azureAdId);
         
-        return syncUser(azureAdId, email, username);
+        // Extract role from Azure AD claims
+        Role role = extractRoleFromOAuth2User(oauth2User);
+        
+        return syncUser(azureAdId, email, username, role);
     }
 
     /**
@@ -77,13 +100,88 @@ public class AzureAdUserService {
         // Ensure username is unique
         username = ensureUniqueUsername(username, azureAdId);
         
-        return syncUser(azureAdId, email, username);
+        // Extract role from Azure AD JWT claims
+        Role role = extractRoleFromJwt(jwt);
+        
+        return syncUser(azureAdId, email, username, role);
+    }
+    
+    /**
+     * Extract role from OAuth2User attributes (groups and roles claims).
+     */
+    @SuppressWarnings("unchecked")
+    private Role extractRoleFromOAuth2User(OAuth2User oauth2User) {
+        Map<String, Object> attributes = oauth2User.getAttributes();
+        return extractRoleFromClaims(attributes);
+    }
+    
+    /**
+     * Extract role from JWT claims (groups and roles claims).
+     */
+    private Role extractRoleFromJwt(Jwt jwt) {
+        return extractRoleFromClaims(jwt.getClaims());
+    }
+    
+    /**
+     * Extract role from claims map (supports both Azure AD Groups and App Roles).
+     * Priority: Admin role takes precedence over User role.
+     * 
+     * @param claims The claims map from OAuth2User or JWT
+     * @return Role.ADMIN if user is in admin group/role, otherwise Role.USER
+     */
+    @SuppressWarnings("unchecked")
+    private Role extractRoleFromClaims(Map<String, Object> claims) {
+        // Check Azure AD Groups (via "groups" claim)
+        Object groupsClaim = claims.get("groups");
+        if (groupsClaim != null) {
+            List<String> groups = null;
+            if (groupsClaim instanceof List) {
+                groups = (List<String>) groupsClaim;
+            } else if (groupsClaim instanceof Collection) {
+                groups = List.copyOf((Collection<String>) groupsClaim);
+            }
+            
+            if (groups != null) {
+                logger.debug("Azure AD groups found: {}", groups);
+                
+                // Check for admin group
+                if (adminGroupId != null && !adminGroupId.isEmpty() && groups.contains(adminGroupId)) {
+                    logger.info("User is member of admin group: {}", adminGroupId);
+                    return Role.ADMIN;
+                }
+            }
+        }
+        
+        // Check Azure AD App Roles (via "roles" claim)
+        Object rolesClaim = claims.get("roles");
+        if (rolesClaim != null) {
+            List<String> appRoles = null;
+            if (rolesClaim instanceof List) {
+                appRoles = (List<String>) rolesClaim;
+            } else if (rolesClaim instanceof Collection) {
+                appRoles = List.copyOf((Collection<String>) rolesClaim);
+            }
+            
+            if (appRoles != null) {
+                logger.debug("Azure AD app roles found: {}", appRoles);
+                
+                // Check for Admin app role
+                if (appRoles.contains(ADMIN_APP_ROLE)) {
+                    logger.info("User has Admin app role");
+                    return Role.ADMIN;
+                }
+            }
+        }
+        
+        // Default to USER role
+        logger.debug("No admin group/role found, defaulting to USER role");
+        return Role.USER;
     }
     
     /**
      * Common method to sync user from Azure AD to local database.
      */
-    private User syncUser(String azureAdId, String email, String username) {
+    private User syncUser(String azureAdId, String email, String username, Role role) {
         // Find existing user by Azure AD ID
         Optional<User> existingUser = userRepository.findByAzureAdId(azureAdId);
         
@@ -103,6 +201,12 @@ public class AzureAdUserService {
                 user.setAuthProvider("azure");
                 updated = true;
             }
+            // Always update role from Azure AD claims (real-time sync)
+            if (role != user.getRole()) {
+                logger.info("Updating user {} role from {} to {}", username, user.getRole(), role);
+                user.setRole(role);
+                updated = true;
+            }
             if (updated) {
                 user = userRepository.save(user);
             }
@@ -117,6 +221,7 @@ public class AzureAdUserService {
                 // Link Azure AD to existing user
                 user.setAzureAdId(azureAdId);
                 user.setAuthProvider("both"); // User can use both methods
+                user.setRole(role); // Update role from Azure AD
                 return userRepository.save(user);
             }
         }
@@ -128,7 +233,9 @@ public class AzureAdUserService {
         newUser.setUsername(username);
         newUser.setPassword(null); // Azure AD users don't have passwords
         newUser.setAuthProvider("azure");
+        newUser.setRole(role);
         
+        logger.info("Creating new Azure AD user: {} with role: {}", username, role);
         return userRepository.save(newUser);
     }
     
@@ -139,7 +246,7 @@ public class AzureAdUserService {
      * @return JWT token string
      */
     public String generateTokenForAzureUser(User user) {
-        return jwtService.generateToken(user.getUsername());
+        return jwtService.generateToken(user.getUsername(), user.getRole());
     }
     
     /**

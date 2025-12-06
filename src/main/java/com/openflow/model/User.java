@@ -40,6 +40,10 @@ public class User {
     @Column(name = "auth_provider", nullable = true)
     private String authProvider = "jwt";
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

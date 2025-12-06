@@ -7,11 +7,17 @@ import com.openflow.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Status (column) management endpoints.
+ * - GET endpoints: All authenticated users (ADMIN and USER)
+ * - POST/PUT/DELETE endpoints: ADMIN only (column management)
+ */
 @RestController
 @RequestMapping("/api/statuses")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -27,6 +33,10 @@ public class StatusController {
         return userService.findByUsername(username).getId();
     }
 
+    /**
+     * Get all statuses for a board.
+     * Available to all authenticated users.
+     */
     @GetMapping("/board/{boardId}")
     public ResponseEntity<List<StatusDto>> getStatusesByBoard(@PathVariable Long boardId, Authentication authentication) {
         try {
@@ -38,6 +48,10 @@ public class StatusController {
         }
     }
 
+    /**
+     * Get a specific status by ID.
+     * Available to all authenticated users.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<StatusDto> getStatus(@PathVariable Long id, Authentication authentication) {
         try {
@@ -49,7 +63,12 @@ public class StatusController {
         }
     }
 
+    /**
+     * Create a new status (column).
+     * ADMIN only.
+     */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StatusDto> createStatus(@Valid @RequestBody StatusDto statusDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -60,7 +79,12 @@ public class StatusController {
         }
     }
 
+    /**
+     * Update an existing status (column).
+     * ADMIN only.
+     */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StatusDto> updateStatus(@PathVariable Long id, @Valid @RequestBody StatusDto statusDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -71,7 +95,12 @@ public class StatusController {
         }
     }
 
+    /**
+     * Delete a status (column).
+     * ADMIN only.
+     */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteStatus(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);

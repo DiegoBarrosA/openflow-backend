@@ -71,7 +71,8 @@ public class AuthController {
             UserInfoResponse response = new UserInfoResponse(
                     user.getUsername(),
                     user.getEmail(),
-                    user.getAuthProvider()
+                    user.getAuthProvider(),
+                    user.getRole().name()
             );
             
             return ResponseEntity.ok(response);
@@ -105,13 +106,14 @@ public class AuthController {
                 return null;
             }
             
-            // Generate JWT token
-            String token = jwtService.generateToken(user.getUsername());
+            // Generate JWT token with role
+            String token = jwtService.generateToken(user.getUsername(), user.getRole());
             
-            // Redirect to frontend with token
+            // Redirect to frontend with token and role
             String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?token=" + 
                 java.net.URLEncoder.encode(token, "UTF-8") + 
-                "&username=" + java.net.URLEncoder.encode(user.getUsername(), "UTF-8");
+                "&username=" + java.net.URLEncoder.encode(user.getUsername(), "UTF-8") +
+                "&role=" + java.net.URLEncoder.encode(user.getRole().name(), "UTF-8");
             
             response.sendRedirect(redirectUrl);
             return null;

@@ -35,11 +35,12 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setAuthProvider("jwt");
+        // New users registered via local auth default to USER role
 
         user = userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getUsername());
-        return new AuthResponse(token, user.getUsername());
+        String token = jwtService.generateToken(user.getUsername(), user.getRole());
+        return new AuthResponse(token, user.getUsername(), user.getRole().name());
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -50,8 +51,8 @@ public class UserService {
             throw new RuntimeException("Invalid username or password");
         }
 
-        String token = jwtService.generateToken(user.getUsername());
-        return new AuthResponse(token, user.getUsername());
+        String token = jwtService.generateToken(user.getUsername(), user.getRole());
+        return new AuthResponse(token, user.getUsername(), user.getRole().name());
     }
 
     public User findByUsername(String username) {

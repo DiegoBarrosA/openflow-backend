@@ -18,7 +18,8 @@ public class BoardService {
             board.getId(),
             board.getName(),
             board.getDescription(),
-            board.getUserId()
+            board.getUserId(),
+            board.getIsPublic()
         );
     }
 
@@ -28,6 +29,7 @@ public class BoardService {
         board.setName(dto.getName());
         board.setDescription(dto.getDescription());
         board.setUserId(dto.getUserId());
+        board.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : false);
         return board;
     }
 
@@ -72,11 +74,28 @@ public class BoardService {
         Board existingBoard = getBoardById(id, userId);
         existingBoard.setName(updatedBoard.getName());
         existingBoard.setDescription(updatedBoard.getDescription());
+        existingBoard.setIsPublic(updatedBoard.getIsPublic() != null ? updatedBoard.getIsPublic() : existingBoard.getIsPublic());
         return boardRepository.save(existingBoard);
     }
 
     public void deleteBoard(Long id, Long userId) {
         Board board = getBoardById(id, userId);
         boardRepository.delete(board);
+    }
+
+    // Public board methods for anonymous access
+    public List<BoardDto> getAllPublicBoardsDto() {
+        return boardRepository.findByIsPublicTrue().stream().map(this::toDto).toList();
+    }
+
+    public BoardDto getPublicBoardByIdDto(Long id) {
+        Board board = boardRepository.findByIdAndIsPublicTrue(id)
+                .orElseThrow(() -> new RuntimeException("Public board not found"));
+        return toDto(board);
+    }
+
+    public Board getPublicBoardById(Long id) {
+        return boardRepository.findByIdAndIsPublicTrue(id)
+                .orElseThrow(() -> new RuntimeException("Public board not found"));
     }
 }

@@ -1,5 +1,6 @@
 package com.openflow.config;
 
+import com.openflow.model.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -18,14 +19,28 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+    
+    private static final String ROLE_CLAIM = "role";
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
+    /**
+     * Generate token without role (for backward compatibility).
+     * Default role will be USER.
+     */
     public String generateToken(String username) {
+        return generateToken(username, Role.USER);
+    }
+    
+    /**
+     * Generate token with role claim.
+     */
+    public String generateToken(String username, Role role) {
         return Jwts.builder()
                 .subject(username)
+                .claim(ROLE_CLAIM, role.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -34,6 +49,22 @@ public class JwtUtil {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+    
+    /**
+     * Extract role from JWT token.
+     * @return Role enum, defaults to USER if not present
+     */
+    public Role extractRole(String token) {
+        String roleName = extractClaim(token, claims -> claims.get(ROLE_CLAIM, String.class));
+        if (roleName == null) {
+            return Role.USER;
+        }
+        try {
+            return Role.valueOf(roleName);
+        } catch (IllegalArgumentException e) {
+            return Role.USER;
+        }
     }
 
     public Date extractExpiration(String token) {

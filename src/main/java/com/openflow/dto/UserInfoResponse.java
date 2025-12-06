@@ -9,5 +9,6 @@ public class UserInfoResponse {
     private String username;
     private String email;
     private String authProvider;
+    private String role;
 }
 

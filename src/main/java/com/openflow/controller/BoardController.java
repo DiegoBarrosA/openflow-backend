@@ -7,11 +7,17 @@ import com.openflow.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Board management endpoints.
+ * - GET endpoints: All authenticated users (ADMIN and USER)
+ * - POST/PUT/DELETE endpoints: ADMIN only
+ */
 @RestController
 @RequestMapping("/api/boards")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -27,6 +33,10 @@ public class BoardController {
         return userService.findByUsername(username).getId();
     }
 
+    /**
+     * Get all boards for the current user.
+     * Available to all authenticated users.
+     */
     @GetMapping
     public ResponseEntity<List<BoardDto>> getAllBoards(Authentication authentication) {
         Long userId = getCurrentUserId(authentication);
@@ -34,6 +44,10 @@ public class BoardController {
         return ResponseEntity.ok(boards);
     }
 
+    /**
+     * Get a specific board by ID.
+     * Available to all authenticated users.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<BoardDto> getBoard(@PathVariable Long id, Authentication authentication) {
         try {
@@ -45,7 +59,12 @@ public class BoardController {
         }
     }
 
+    /**
+     * Create a new board.
+     * ADMIN only.
+     */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BoardDto> createBoard(@Valid @RequestBody BoardDto boardDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -56,7 +75,12 @@ public class BoardController {
         }
     }
 
+    /**
+     * Update an existing board.
+     * ADMIN only.
+     */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BoardDto> updateBoard(@PathVariable Long id, @Valid @RequestBody BoardDto boardDto, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
@@ -67,7 +91,12 @@ public class BoardController {
         }
     }
 
+    /**
+     * Delete a board.
+     * ADMIN only.
+     */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteBoard(@PathVariable Long id, Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
