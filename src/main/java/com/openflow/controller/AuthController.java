@@ -4,6 +4,7 @@ import com.openflow.dto.AuthRequest;
 import com.openflow.dto.AuthResponse;
 import com.openflow.dto.RegisterRequest;
 import com.openflow.dto.UserInfoResponse;
+import com.openflow.model.Role;
 import com.openflow.model.User;
 import com.openflow.service.JwtService;
 import com.openflow.service.UserService;
@@ -68,11 +69,14 @@ public class AuthController {
             String username = authentication.getName();
             User user = userService.findByUsername(username);
             
+            // Handle null role for existing users (default to USER)
+            String roleName = user.getRole() != null ? user.getRole().name() : Role.USER.name();
+            
             UserInfoResponse response = new UserInfoResponse(
                     user.getUsername(),
                     user.getEmail(),
                     user.getAuthProvider(),
-                    user.getRole().name()
+                    roleName
             );
             
             return ResponseEntity.ok(response);
@@ -106,14 +110,17 @@ public class AuthController {
                 return null;
             }
             
+            // Handle null role for existing users (default to USER)
+            Role userRole = user.getRole() != null ? user.getRole() : Role.USER;
+            
             // Generate JWT token with role
-            String token = jwtService.generateToken(user.getUsername(), user.getRole());
+            String token = jwtService.generateToken(user.getUsername(), userRole);
             
             // Redirect to frontend with token and role
             String redirectUrl = getFrontendBaseUrl() + "/oauth-callback?token=" + 
                 java.net.URLEncoder.encode(token, "UTF-8") + 
                 "&username=" + java.net.URLEncoder.encode(user.getUsername(), "UTF-8") +
-                "&role=" + java.net.URLEncoder.encode(user.getRole().name(), "UTF-8");
+                "&role=" + java.net.URLEncoder.encode(userRole.name(), "UTF-8");
             
             response.sendRedirect(redirectUrl);
             return null;

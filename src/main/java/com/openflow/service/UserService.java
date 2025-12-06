@@ -3,6 +3,7 @@ package com.openflow.service;
 import com.openflow.dto.AuthRequest;
 import com.openflow.dto.AuthResponse;
 import com.openflow.dto.RegisterRequest;
+import com.openflow.model.Role;
 import com.openflow.model.User;
 import com.openflow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,13 @@ public class UserService {
 
     @Autowired
     private JwtService jwtService;
+    
+    /**
+     * Get user role, defaulting to USER if null (for existing users before RBAC).
+     */
+    private Role getEffectiveRole(User user) {
+        return user.getRole() != null ? user.getRole() : Role.USER;
+    }
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -35,12 +43,13 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setAuthProvider("jwt");
-        // New users registered via local auth default to USER role
+        user.setRole(Role.USER); // Explicitly set role for new users
 
         user = userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getUsername(), user.getRole());
-        return new AuthResponse(token, user.getUsername(), user.getRole().name());
+        Role role = getEffectiveRole(user);
+        String token = jwtService.generateToken(user.getUsername(), role);
+        return new AuthResponse(token, user.getUsername(), role.name());
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -51,8 +60,9 @@ public class UserService {
             throw new RuntimeException("Invalid username or password");
         }
 
-        String token = jwtService.generateToken(user.getUsername(), user.getRole());
-        return new AuthResponse(token, user.getUsername(), user.getRole().name());
+        Role role = getEffectiveRole(user);
+        String token = jwtService.generateToken(user.getUsername(), role);
+        return new AuthResponse(token, user.getUsername(), role.name());
     }
 
     public User findByUsername(String username) {
