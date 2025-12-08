@@ -4,6 +4,11 @@ import com.openflow.model.Task;
 import com.openflow.dto.TaskDto;
 import com.openflow.service.TaskService;
 import com.openflow.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +23,7 @@ import java.util.List;
  * All task operations are available to both ADMIN and USER roles.
  * Users can create, move, modify, and delete tasks.
  */
+@Tag(name = "Tasks", description = "Task management operations")
 @RestController
 @RequestMapping("/api/tasks")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -37,9 +43,13 @@ public class TaskController {
      * Get all tasks for a board.
      * Available to ADMIN and USER.
      */
+    @Operation(summary = "Get tasks by board", description = "Retrieve all tasks for a specific board. Requires READ access to the board.")
+    @ApiResponse(responseCode = "200", description = "List of tasks retrieved successfully")
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<TaskDto>> getTasks(@RequestParam Long boardId, Authentication authentication) {
+    public ResponseEntity<List<TaskDto>> getTasks(
+            @Parameter(description = "Board ID", required = true) @RequestParam Long boardId, 
+            Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
             List<TaskDto> tasks = taskService.getTasksByBoardIdDto(boardId, userId);

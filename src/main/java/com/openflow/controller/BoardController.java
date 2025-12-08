@@ -1,9 +1,13 @@
 package com.openflow.controller;
 
-import com.openflow.model.Board;
 import com.openflow.dto.BoardDto;
 import com.openflow.service.BoardService;
 import com.openflow.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,7 @@ import java.util.List;
  * - GET endpoints: All authenticated users (ADMIN and USER)
  * - POST/PUT/DELETE endpoints: ADMIN only
  */
+@Tag(name = "Boards", description = "Board management operations")
 @RestController
 @RequestMapping("/api/boards")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -37,6 +42,8 @@ public class BoardController {
      * Get all boards for the current user.
      * Available to all authenticated users.
      */
+    @Operation(summary = "Get all boards", description = "Retrieve all boards accessible by the current user (owned and shared)")
+    @ApiResponse(responseCode = "200", description = "List of boards retrieved successfully")
     @GetMapping
     public ResponseEntity<List<BoardDto>> getAllBoards(Authentication authentication) {
         Long userId = getCurrentUserId(authentication);
@@ -48,8 +55,15 @@ public class BoardController {
      * Get a specific board by ID.
      * Available to all authenticated users.
      */
+    @Operation(summary = "Get board by ID", description = "Retrieve a specific board by its ID. User must have access to the board.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Board retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Board not found or access denied")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<BoardDto> getBoard(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<BoardDto> getBoard(
+            @Parameter(description = "Board ID", required = true) @PathVariable Long id, 
+            Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
             BoardDto board = boardService.getBoardByIdDto(id, userId);
@@ -63,6 +77,12 @@ public class BoardController {
      * Create a new board.
      * ADMIN only.
      */
+    @Operation(summary = "Create board", description = "Create a new board. Requires ADMIN role.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Board created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid board data"),
+        @ApiResponse(responseCode = "403", description = "Access denied - ADMIN role required")
+    })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BoardDto> createBoard(@Valid @RequestBody BoardDto boardDto, Authentication authentication) {

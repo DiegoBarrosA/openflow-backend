@@ -3,6 +3,11 @@ package com.openflow.controller;
 import com.openflow.dto.CommentDto;
 import com.openflow.service.CommentService;
 import com.openflow.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +23,7 @@ import java.util.List;
  * Users can create, edit, and delete their own comments.
  * Admins can delete any comment.
  */
+@Tag(name = "Comments", description = "Task comment management operations")
 @RestController
 @RequestMapping("/api/comments")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -37,9 +43,13 @@ public class CommentController {
      * Get all comments for a task.
      * Available to ADMIN and USER.
      */
+    @Operation(summary = "Get task comments", description = "Retrieve all comments for a specific task. Requires access to the task's board.")
+    @ApiResponse(responseCode = "200", description = "List of comments retrieved successfully")
     @GetMapping("/task/{taskId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<CommentDto>> getCommentsByTask(@PathVariable Long taskId, Authentication authentication) {
+    public ResponseEntity<List<CommentDto>> getCommentsByTask(
+            @Parameter(description = "Task ID", required = true) @PathVariable Long taskId, 
+            Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
             List<CommentDto> comments = commentService.getCommentsByTaskId(taskId, userId);

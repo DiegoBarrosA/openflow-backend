@@ -4,6 +4,11 @@ import com.openflow.dto.BoardAccessDto;
 import com.openflow.model.AccessLevel;
 import com.openflow.service.BoardAccessService;
 import com.openflow.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +23,7 @@ import java.util.Map;
  * Board access management endpoints.
  * All endpoints require board owner or ADMIN access to the board.
  */
+@Tag(name = "Board Access", description = "Board access and sharing management operations")
 @RestController
 @RequestMapping("/api/boards/{boardId}/access")
 @CrossOrigin(origins = "${cors.allowed-origins}")
@@ -37,9 +43,13 @@ public class BoardAccessController {
      * Get all users with access to a board.
      * Available to board owner or users with ADMIN access.
      */
+    @Operation(summary = "Get board access list", description = "Retrieve all users with access to a board. Requires board owner or ADMIN access.")
+    @ApiResponse(responseCode = "200", description = "List of board accesses retrieved successfully")
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<BoardAccessDto>> getBoardAccess(@PathVariable Long boardId, Authentication authentication) {
+    public ResponseEntity<List<BoardAccessDto>> getBoardAccess(
+            @Parameter(description = "Board ID", required = true) @PathVariable Long boardId, 
+            Authentication authentication) {
         try {
             Long userId = getCurrentUserId(authentication);
             List<BoardAccessDto> accesses = boardAccessService.getBoardAccesses(boardId, userId);
