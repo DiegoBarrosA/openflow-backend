@@ -58,13 +58,48 @@ mvn test jacoco:report
 ```
 
 ### Containerized Testing
+
+**Recommended: Use the test script**
+
+```bash
+# Run all tests
+./podman-test.sh
+
+# Run specific test class
+./podman-test.sh CommentServiceTest
+```
+
+**Alternative: Direct Podman commands**
+
 ```bash
 # Build test image
 podman build -t openflow-backend-test:latest -f Dockerfile.test .
 
 # Run tests in container
-podman run --rm openflow-backend-test:latest mvn test
+podman run --rm \
+  -v "$(pwd)/target/surefire-reports:/app/target/surefire-reports:Z" \
+  -v "$(pwd)/target/site/jacoco:/app/target/site/jacoco:Z" \
+  openflow-backend-test:latest \
+  mvn test
 ```
+
+**Using Podman Compose**
+
+```bash
+podman compose -f docker-compose.test.yml up --build
+```
+
+**Using Podman Play Kube**
+
+```bash
+# Build image first
+podman build -t openflow-backend-test:latest -f Dockerfile.test .
+
+# Run with podman play kube
+podman play kube test-kube.yaml
+```
+
+For more details, see [TESTING.md](../../TESTING.md) in the root directory.
 
 ## Test Examples
 

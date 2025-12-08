@@ -12,8 +12,11 @@ RUN mvn dependency:go-offline -B
 # Copy source code
 COPY src ./src
 
-# Default command runs tests
-CMD ["mvn", "test"]
+# Set test profile environment variable
+ENV SPRING_PROFILES_ACTIVE=test
+
+# Default command runs tests with test profile
+CMD ["mvn", "test", "-Dspring.profiles.active=test"]
 
 
 

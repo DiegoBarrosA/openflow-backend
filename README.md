@@ -17,6 +17,22 @@ podman run -d -p 8080:8080 openflow-backend:latest
 mvn spring-boot:run
 ```
 
+### Running Tests
+
+Tests run in Podman containers. See [TESTING.md](TESTING.md) for detailed instructions.
+
+```bash
+# Quick start - run all tests
+./podman-test.sh
+
+# Run specific test class
+./podman-test.sh CommentServiceTest
+```
+
+Test results are available in `target/surefire-reports/` after execution.
+
+**CI/CD**: Tests run automatically in GitHub Actions on every push and pull request. The build workflow only creates images if all tests pass.
+
 ### Cloud Deployment (AWS EKS + GHCR)
 
 #### Prerequisites
@@ -100,6 +116,12 @@ kubectl logs -l app=openflow-backend
 kubectl get svc openflow-backend
 ```
 
+
+## CI/CD Status
+
+- **Tests**: Run automatically on push/PR via GitHub Actions
+- **Build**: Images built and pushed to GHCR only if tests pass
+- **Deployment**: Automatic deployment triggered on successful builds
 
 ## Documentation
 
