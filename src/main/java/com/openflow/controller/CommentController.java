@@ -1,0 +1,100 @@
+package com.openflow.controller;
+
+import com.openflow.dto.CommentDto;
+import com.openflow.service.CommentService;
+import com.openflow.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * Comment management endpoints.
+ * All comment operations are available to both ADMIN and USER roles.
+ * Users can create, edit, and delete their own comments.
+ * Admins can delete any comment.
+ */
+@RestController
+@RequestMapping("/api/comments")
+@CrossOrigin(origins = "${cors.allowed-origins}")
+public class CommentController {
+    @Autowired
+    private CommentService commentService;
+
+    @Autowired
+    private UserService userService;
+
+    private Long getCurrentUserId(Authentication authentication) {
+        String username = authentication.getName();
+        return userService.findByUsername(username).getId();
+    }
+
+    /**
+     * Get all comments for a task.
+     * Available to ADMIN and USER.
+     */
+    @GetMapping("/task/{taskId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<CommentDto>> getCommentsByTask(@PathVariable Long taskId, Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            List<CommentDto> comments = commentService.getCommentsByTaskId(taskId, userId);
+            return ResponseEntity.ok(comments);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Create a new comment.
+     * Available to ADMIN and USER.
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<CommentDto> createComment(@Valid @RequestBody CommentDto commentDto, Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            CommentDto createdComment = commentService.createComment(commentDto, userId);
+            return ResponseEntity.ok(createdComment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Update an existing comment.
+     * Available to ADMIN and USER (only own comments).
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<CommentDto> updateComment(@PathVariable Long id, @Valid @RequestBody CommentDto commentDto, Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            CommentDto updatedComment = commentService.updateComment(id, commentDto, userId);
+            return ResponseEntity.ok(updatedComment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Delete a comment.
+     * Available to ADMIN and USER (only own comments, or admin can delete any).
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id, Authentication authentication) {
+        try {
+            Long userId = getCurrentUserId(authentication);
+            commentService.deleteComment(id, userId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+}
+

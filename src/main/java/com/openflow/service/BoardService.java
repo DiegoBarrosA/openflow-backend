@@ -29,6 +29,10 @@ public class BoardService {
     @Lazy
     private ChangeLogService changeLogService;
 
+    @Autowired
+    @Lazy
+    private BoardAccessService boardAccessService;
+
     private BoardDto toDto(Board board) {
         return new BoardDto(
             board.getId(),
@@ -71,16 +75,39 @@ public class BoardService {
     }
 
     public List<Board> getAllBoardsByUserId(Long userId) {
-        return boardRepository.findByUserId(userId);
+        // Include owned boards and shared boards
+        return boardAccessService.getUserAccessibleBoards(userId);
     }
 
     public Board getBoardById(Long id, Long userId) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Board not found"));
-        if (!board.getUserId().equals(userId)) {
+        
+        // Check if user is owner or has access
+        if (!isBoardOwner(id, userId) && !boardAccessService.hasAccess(id, userId, com.openflow.model.AccessLevel.READ)) {
             throw new RuntimeException("Unauthorized access to board");
         }
         return board;
+    }
+
+    /**
+     * Check if user is the board owner.
+     */
+    public boolean isBoardOwner(Long boardId, Long userId) {
+        Board board = boardRepository.findById(boardId).orElse(null);
+        return board != null && board.getUserId().equals(userId);
+    }
+
+    /**
+     * Get user's access level to a board.
+     * Returns: "OWNER", "ADMIN", "WRITE", "READ", or null if no access.
+     */
+    public String getBoardAccessLevel(Long boardId, Long userId) {
+        if (isBoardOwner(boardId, userId)) {
+            return "OWNER";
+        }
+        
+        return boardAccessService.getUserAccessLevel(boardId, userId);
     }
 
     public Board createBoard(Board board, Long userId) {

@@ -2,7 +2,6 @@ package com.openflow.service;
 
 import com.openflow.dto.StatusDto;
 import com.openflow.model.Status;
-import com.openflow.repository.BoardRepository;
 import com.openflow.repository.StatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -14,9 +13,6 @@ import java.util.List;
 public class StatusService {
     @Autowired
     private StatusRepository statusRepository;
-
-    @Autowired
-    private BoardRepository boardRepository;
 
     @Autowired
     private BoardService boardService;
@@ -77,7 +73,11 @@ public class StatusService {
     }
 
     public Status createStatus(Status status, Long userId) {
-        boardService.getBoardById(status.getBoardId(), userId); // Validate board access
+        // Validate user has ADMIN access or is owner
+        String accessLevel = boardService.getBoardAccessLevel(status.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: ADMIN access required to create statuses");
+        }
         
         // Set order if not provided
         if (status.getOrder() == null) {
@@ -95,6 +95,12 @@ public class StatusService {
 
     public Status updateStatus(Long id, Status updatedStatus, Long userId) {
         Status existingStatus = getStatusById(id, userId);
+        
+        // Validate user has ADMIN access or is owner
+        String accessLevel = boardService.getBoardAccessLevel(existingStatus.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: ADMIN access required to update statuses");
+        }
         
         // Log field changes
         if (!existingStatus.getName().equals(updatedStatus.getName())) {
@@ -121,6 +127,12 @@ public class StatusService {
     public void deleteStatus(Long id, Long userId) {
         Status status = getStatusById(id, userId);
         
+        // Validate user has ADMIN access or is owner
+        String accessLevel = boardService.getBoardAccessLevel(status.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: ADMIN access required to delete statuses");
+        }
+        
         // Log deletion before deleting
         changeLogService.logDelete(ChangeLogService.ENTITY_STATUS, id, userId);
         
@@ -135,7 +147,11 @@ public class StatusService {
      * @return Updated list of statuses
      */
     public List<StatusDto> reorderStatuses(Long boardId, List<Long> statusIds, Long userId) {
-        boardService.getBoardById(boardId, userId); // Validate board access
+        // Validate user has ADMIN access or is owner
+        String accessLevel = boardService.getBoardAccessLevel(boardId, userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: ADMIN access required to reorder statuses");
+        }
         
         List<Status> statuses = statusRepository.findByBoardIdOrderByOrderAsc(boardId);
         

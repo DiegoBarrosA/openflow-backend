@@ -97,19 +97,24 @@ public class TaskService {
     }
 
     public List<Task> getTasksByBoardId(Long boardId, Long userId) {
-        boardService.getBoardById(boardId, userId); // Validate board access
+        boardService.getBoardById(boardId, userId); // Validate board access (READ or higher)
         return taskRepository.findByBoardId(boardId);
     }
 
     public Task getTaskById(Long id, Long userId) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
-        boardService.getBoardById(task.getBoardId(), userId); // Validate board access
+        boardService.getBoardById(task.getBoardId(), userId); // Validate board access (READ or higher)
         return task;
     }
 
     public Task createTask(Task task, Long userId) {
-        boardService.getBoardById(task.getBoardId(), userId); // Validate board access
+        // Validate user has WRITE access or higher
+        boardService.getBoardById(task.getBoardId(), userId); // This validates READ access
+        String accessLevel = boardService.getBoardAccessLevel(task.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel) && !"WRITE".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: WRITE access required to create tasks");
+        }
         statusService.getStatusById(task.getStatusId(), userId); // Validate status exists and belongs to board
         Task saved = taskRepository.save(task);
         
@@ -129,6 +134,12 @@ public class TaskService {
 
     public Task updateTask(Long id, Task updatedTask, Long userId) {
         Task existingTask = getTaskById(id, userId);
+        
+        // Validate user has WRITE access or higher
+        String accessLevel = boardService.getBoardAccessLevel(existingTask.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel) && !"WRITE".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: WRITE access required to update tasks");
+        }
         boolean wasUpdated = false;
         boolean wasMoved = false;
         
@@ -200,6 +211,12 @@ public class TaskService {
 
     public void deleteTask(Long id, Long userId) {
         Task task = getTaskById(id, userId);
+        
+        // Validate user has WRITE access or higher
+        String accessLevel = boardService.getBoardAccessLevel(task.getBoardId(), userId);
+        if (!"OWNER".equals(accessLevel) && !"ADMIN".equals(accessLevel) && !"WRITE".equals(accessLevel)) {
+            throw new RuntimeException("Unauthorized: WRITE access required to delete tasks");
+        }
         
         // Log deletion before deleting
         changeLogService.logDelete(ChangeLogService.ENTITY_TASK, id, userId);
