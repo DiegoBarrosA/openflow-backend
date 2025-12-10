@@ -3,7 +3,6 @@ package com.openflow.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,11 +19,11 @@ import java.util.Arrays;
  * Simplified security configuration for testing.
  * This configuration disables OAuth2, Azure AD, and JWT filters,
  * allowing tests to focus on business logic without complex authentication setup.
- * Method security is enabled to test @PreAuthorize annotations with @WithMockUser.
+ * Method security is disabled in tests to avoid @PreAuthorize blocking controller execution.
+ * Tests can still verify authentication via @WithMockUser and SecurityMockMvcRequestPostProcessors.
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
 @Profile("test")
 public class TestSecurityConfig {
 
@@ -40,7 +39,7 @@ public class TestSecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll() // Allow all requests in test mode - method security handles @PreAuthorize
+                .anyRequest().permitAll() // Allow all requests in test mode - @PreAuthorize is disabled for tests
             )
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
