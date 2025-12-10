@@ -15,11 +15,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses WebMvcTest to test only the web layer without loading full application context.
  */
 @WebMvcTest(controllers = CommentController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @org.springframework.context.annotation.Import(com.openflow.config.TestSecurityConfig.class)
 class CommentControllerTest {
@@ -98,7 +98,8 @@ class CommentControllerTest {
         when(commentService.getCommentsByTaskId(taskId, 1L)).thenReturn(comments);
 
         // Act & Assert
-        mockMvc.perform(get("/api/comments/task/{taskId}", taskId))
+        mockMvc.perform(get("/api/comments/task/{taskId}", taskId)
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].content").value("Test comment"));
     }
@@ -115,6 +116,7 @@ class CommentControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/comments")
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newComment)))
                 .andExpect(status().isOk())
@@ -130,7 +132,8 @@ class CommentControllerTest {
         org.mockito.Mockito.doNothing().when(commentService).deleteComment(commentId, 1L);
 
         // Act & Assert
-        mockMvc.perform(delete("/api/comments/{id}", commentId))
+        mockMvc.perform(delete("/api/comments/{id}", commentId)
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER")))
                 .andExpect(status().isNoContent());
     }
 }
