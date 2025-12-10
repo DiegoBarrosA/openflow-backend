@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -64,7 +65,9 @@ public class CommentController {
         try {
             Long userId = getCurrentUserId(authentication);
             List<CommentDto> comments = commentService.getCommentsByTaskId(taskId, userId);
-            return ResponseEntity.ok(comments);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(comments);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -80,7 +83,9 @@ public class CommentController {
         try {
             Long userId = getCurrentUserId(authentication);
             CommentDto createdComment = commentService.createComment(commentDto, userId);
-            return ResponseEntity.ok(createdComment);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(createdComment);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -96,7 +101,9 @@ public class CommentController {
         try {
             Long userId = getCurrentUserId(authentication);
             CommentDto updatedComment = commentService.updateComment(id, commentDto, userId);
-            return ResponseEntity.ok(updatedComment);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(updatedComment);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
