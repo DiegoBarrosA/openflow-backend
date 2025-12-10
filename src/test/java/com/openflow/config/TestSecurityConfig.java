@@ -20,6 +20,7 @@ import java.util.Arrays;
  * Simplified security configuration for testing.
  * This configuration disables OAuth2, Azure AD, and JWT filters,
  * allowing tests to focus on business logic without complex authentication setup.
+ * Method security is enabled to test @PreAuthorize annotations with @WithMockUser.
  */
 @Configuration
 @EnableWebSecurity
@@ -39,7 +40,7 @@ public class TestSecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll() // Allow all requests in test mode
+                .anyRequest().permitAll() // Allow all requests in test mode - method security handles @PreAuthorize
             )
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
