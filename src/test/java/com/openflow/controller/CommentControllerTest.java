@@ -104,7 +104,6 @@ class CommentControllerTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/comments/task/{taskId}", taskId)
-                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -123,7 +122,6 @@ class CommentControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/comments")
-                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newComment)))
@@ -141,8 +139,7 @@ class CommentControllerTest {
         org.mockito.Mockito.doNothing().when(commentService).deleteComment(anyLong(), anyLong());
 
         // Act & Assert
-        mockMvc.perform(delete("/api/comments/{id}", commentId)
-                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER")))
+        mockMvc.perform(delete("/api/comments/{id}", commentId))
                 .andExpect(status().isNoContent());
     }
 }
