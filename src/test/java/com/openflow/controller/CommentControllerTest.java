@@ -24,7 +24,9 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -74,6 +76,9 @@ class CommentControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Reset mocks before each test
+        reset(commentService, userService);
+        
         testUser = new User();
         testUser.setId(1L);
         testUser.setUsername("testuser");
@@ -95,12 +100,14 @@ class CommentControllerTest {
         // Arrange
         Long taskId = 1L;
         List<CommentDto> comments = Arrays.asList(testCommentDto);
-        when(commentService.getCommentsByTaskId(taskId, 1L)).thenReturn(comments);
+        when(commentService.getCommentsByTaskId(anyLong(), anyLong())).thenReturn(comments);
 
         // Act & Assert
         mockMvc.perform(get("/api/comments/task/{taskId}", taskId)
-                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER")))
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].content").value("Test comment"));
     }
 
@@ -118,8 +125,10 @@ class CommentControllerTest {
         mockMvc.perform(post("/api/comments")
                         .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newComment)))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content").value("Test comment"));
     }
 
@@ -129,7 +138,7 @@ class CommentControllerTest {
         // Arrange
         Long commentId = 1L;
         // Mock the deleteComment to not throw exception
-        org.mockito.Mockito.doNothing().when(commentService).deleteComment(commentId, 1L);
+        org.mockito.Mockito.doNothing().when(commentService).deleteComment(anyLong(), anyLong());
 
         // Act & Assert
         mockMvc.perform(delete("/api/comments/{id}", commentId)
