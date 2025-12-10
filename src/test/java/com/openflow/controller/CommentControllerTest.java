@@ -84,6 +84,9 @@ class CommentControllerTest {
         testCommentDto.setTaskId(1L);
         testCommentDto.setUserId(1L);
         testCommentDto.setContent("Test comment");
+        
+        // Set up default mock for userService.findByUsername to avoid NullPointerException
+        when(userService.findByUsername("testuser")).thenReturn(testUser);
     }
 
     @Test
@@ -92,7 +95,6 @@ class CommentControllerTest {
         // Arrange
         Long taskId = 1L;
         List<CommentDto> comments = Arrays.asList(testCommentDto);
-        when(userService.findByUsername("testuser")).thenReturn(testUser);
         when(commentService.getCommentsByTaskId(taskId, 1L)).thenReturn(comments);
 
         // Act & Assert
@@ -109,7 +111,6 @@ class CommentControllerTest {
         newComment.setTaskId(1L);
         newComment.setContent("New comment");
 
-        when(userService.findByUsername("testuser")).thenReturn(testUser);
         when(commentService.createComment(any(CommentDto.class), anyLong())).thenReturn(testCommentDto);
 
         // Act & Assert
@@ -125,7 +126,6 @@ class CommentControllerTest {
     void testDeleteComment() throws Exception {
         // Arrange
         Long commentId = 1L;
-        when(userService.findByUsername("testuser")).thenReturn(testUser);
         // Mock the deleteComment to not throw exception
         org.mockito.Mockito.doNothing().when(commentService).deleteComment(commentId, 1L);
 

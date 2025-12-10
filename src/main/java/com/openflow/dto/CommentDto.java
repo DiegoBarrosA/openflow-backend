@@ -1,5 +1,7 @@
 package com.openflow.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public class CommentDto {
@@ -7,6 +9,9 @@ public class CommentDto {
     private Long taskId;
     private Long userId;
     private String username;
+    
+    @NotBlank(message = "Content is required")
+    @Size(min = 1, max = 1000, message = "Content must be between 1 and 1000 characters")
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

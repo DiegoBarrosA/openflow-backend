@@ -1,6 +1,7 @@
 package com.openflow.controller;
 
 import com.openflow.dto.CommentDto;
+import com.openflow.model.User;
 import com.openflow.service.CommentService;
 import com.openflow.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,8 +36,18 @@ public class CommentController {
     private UserService userService;
 
     private Long getCurrentUserId(Authentication authentication) {
+        if (authentication == null) {
+            throw new RuntimeException("Authentication is required");
+        }
         String username = authentication.getName();
-        return userService.findByUsername(username).getId();
+        if (username == null) {
+            throw new RuntimeException("Username not found in authentication");
+        }
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found: " + username);
+        }
+        return user.getId();
     }
 
     /**
