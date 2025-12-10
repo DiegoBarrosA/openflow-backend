@@ -11,10 +11,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,12 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Controller integration tests for CommentController.
  * Uses test profile to avoid complex security configuration.
- * Uses WebMvcTest to test only the web layer without loading full application context.
+ * Uses SpringBootTest with MockMvc to test the full application context with proper security handling.
  */
-@WebMvcTest(controllers = CommentController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
-@org.springframework.context.annotation.Import(com.openflow.config.TestSecurityConfig.class)
 class CommentControllerTest {
 
     @Autowired
@@ -95,7 +93,6 @@ class CommentControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = {"USER"})
     void testGetCommentsByTask() throws Exception {
         // Arrange
         Long taskId = 1L;
@@ -104,6 +101,7 @@ class CommentControllerTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/comments/task/{taskId}", taskId)
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -111,7 +109,6 @@ class CommentControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = {"USER"})
     void testCreateComment() throws Exception {
         // Arrange
         CommentDto newComment = new CommentDto();
@@ -122,6 +119,7 @@ class CommentControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/comments")
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newComment)))
@@ -131,7 +129,6 @@ class CommentControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = {"USER"})
     void testDeleteComment() throws Exception {
         // Arrange
         Long commentId = 1L;
@@ -139,7 +136,8 @@ class CommentControllerTest {
         org.mockito.Mockito.doNothing().when(commentService).deleteComment(anyLong(), anyLong());
 
         // Act & Assert
-        mockMvc.perform(delete("/api/comments/{id}", commentId))
+        mockMvc.perform(delete("/api/comments/{id}", commentId)
+                        .with(SecurityMockMvcRequestPostProcessors.user("testuser").roles("USER")))
                 .andExpect(status().isNoContent());
     }
 }
