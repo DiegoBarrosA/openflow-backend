@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses WebMvcTest to test only the web layer without loading full application context.
  */
 @WebMvcTest(controllers = CommentController.class)
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @org.springframework.context.annotation.Import(com.openflow.config.TestSecurityConfig.class)
 class CommentControllerTest {
