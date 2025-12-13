@@ -83,9 +83,15 @@ public class TaskService {
         Task created = createTask(task, userId);
         
         // Save custom field values if provided
-        Map<Long, String> customFieldValues = taskDto.getCustomFieldValues();
+        Map<String, String> customFieldValues = taskDto.getCustomFieldValues();
         if (customFieldValues != null && !customFieldValues.isEmpty()) {
-            customFieldService.setFieldValues(created.getId(), customFieldValues, userId);
+            // Convert String keys to Long
+            Map<Long, String> convertedValues = customFieldValues.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    e -> Long.parseLong(e.getKey()),
+                    Map.Entry::getValue
+                ));
+            customFieldService.setFieldValues(created.getId(), convertedValues, userId);
         }
         
         return toDto(created);

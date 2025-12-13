@@ -12,7 +12,7 @@ public class TaskDto {
     private Long assignedUserId;
     private String assignedUsername;
     private LocalDateTime createdAt;
-    private Map<Long, String> customFieldValues; // fieldDefinitionId -> value
+    private Map<String, String> customFieldValues; // fieldDefinitionId (as string) -> value
 
     public TaskDto() {}
 
@@ -36,7 +36,7 @@ public class TaskDto {
         this.createdAt = createdAt;
     }
 
-    public TaskDto(Long id, String title, String description, Long statusId, Long boardId, LocalDateTime createdAt, Map<Long, String> customFieldValues) {
+    public TaskDto(Long id, String title, String description, Long statusId, Long boardId, LocalDateTime createdAt, Map<String, String> customFieldValues) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -70,6 +70,6 @@ public class TaskDto {
     public String getAssignedUsername() { return assignedUsername; }
     public void setAssignedUsername(String assignedUsername) { this.assignedUsername = assignedUsername; }
 
-    public Map<Long, String> getCustomFieldValues() { return customFieldValues; }
-    public void setCustomFieldValues(Map<Long, String> customFieldValues) { this.customFieldValues = customFieldValues; }
+    public Map<String, String> getCustomFieldValues() { return customFieldValues; }
+    public void setCustomFieldValues(Map<String, String> customFieldValues) { this.customFieldValues = customFieldValues; }
 }
