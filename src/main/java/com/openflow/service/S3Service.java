@@ -29,14 +29,18 @@ public class S3Service {
     @Value("${aws.s3.region:us-east-1}")
     private String awsRegion;
 
-    @Value("${aws.s3.enabled:false}")
-    private boolean s3Enabled;
+    @Value("${aws.s3.enabled:}")
+    private String s3EnabledStr;
 
+    private boolean s3Enabled;
     private S3Client s3Client;
     private S3Presigner s3Presigner;
 
     @PostConstruct
     public void init() {
+        // Parse s3Enabled from string, handling empty values
+        s3Enabled = "true".equalsIgnoreCase(s3EnabledStr);
+        
         if (s3Enabled) {
             try {
                 Region region = Region.of(awsRegion);
