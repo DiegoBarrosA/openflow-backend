@@ -28,16 +28,30 @@ public class CommentService {
     @Lazy
     private ChangeLogService changeLogService;
 
+    @Autowired
+    private S3Service s3Service;
+
 
     private CommentDto toDto(Comment comment) {
-        String username = userRepository.findById(comment.getUserId())
-                .map(User::getUsername)
-                .orElse("Unknown");
+        User user = userRepository.findById(comment.getUserId()).orElse(null);
+        String username = user != null ? user.getUsername() : "Unknown";
+        String profilePictureUrl = null;
+        
+        // Get profile picture URL if available
+        if (user != null && user.getProfilePictureKey() != null && s3Service.isEnabled()) {
+            try {
+                profilePictureUrl = s3Service.getPresignedUrl(user.getProfilePictureKey());
+            } catch (Exception e) {
+                // Ignore - profile picture not available
+            }
+        }
+        
         return new CommentDto(
             comment.getId(),
             comment.getTaskId(),
             comment.getUserId(),
             username,
+            profilePictureUrl,
             comment.getContent(),
             comment.getCreatedAt(),
             comment.getUpdatedAt()

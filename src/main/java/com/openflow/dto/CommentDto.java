@@ -9,6 +9,7 @@ public class CommentDto {
     private Long taskId;
     private Long userId;
     private String username;
+    private String profilePictureUrl;
     
     @NotBlank(message = "Content is required")
     @Size(min = 1, max = 1000, message = "Content must be between 1 and 1000 characters")
@@ -18,12 +19,13 @@ public class CommentDto {
 
     public CommentDto() {}
 
-    public CommentDto(Long id, Long taskId, Long userId, String username, String content, 
-                     LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public CommentDto(Long id, Long taskId, Long userId, String username, String profilePictureUrl, 
+                     String content, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.taskId = taskId;
         this.userId = userId;
         this.username = username;
+        this.profilePictureUrl = profilePictureUrl;
         this.content = content;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -40,6 +42,9 @@ public class CommentDto {
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
