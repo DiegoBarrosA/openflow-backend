@@ -44,6 +44,9 @@ public class User {
     @Column(nullable = true)
     private Role role = Role.USER;
 
+    @Column(name = "profile_picture_key")
+    private String profilePictureKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

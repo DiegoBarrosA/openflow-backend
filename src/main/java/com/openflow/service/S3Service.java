@@ -71,20 +71,33 @@ public class S3Service {
     }
 
     /**
-     * Upload a file to S3 and return the S3 key.
+     * Upload a file to S3 for a task and return the S3 key.
      */
     public String uploadFile(MultipartFile file, Long taskId) throws IOException {
+        String s3Key = "tasks/" + taskId + "/" + UUID.randomUUID().toString() + getFileExtension(file);
+        return uploadToS3(file, s3Key);
+    }
+
+    /**
+     * Upload a profile picture to S3 and return the S3 key.
+     */
+    public String uploadProfilePicture(MultipartFile file, Long userId) throws IOException {
+        String s3Key = "profiles/" + userId + "/" + UUID.randomUUID().toString() + getFileExtension(file);
+        return uploadToS3(file, s3Key);
+    }
+
+    private String getFileExtension(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null && originalFilename.contains(".")) {
+            return originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        return "";
+    }
+
+    private String uploadToS3(MultipartFile file, String s3Key) throws IOException {
         if (!isEnabled()) {
             throw new RuntimeException("S3 storage is not enabled");
         }
-
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-        
-        String s3Key = "tasks/" + taskId + "/" + UUID.randomUUID().toString() + extension;
 
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(bucketName)

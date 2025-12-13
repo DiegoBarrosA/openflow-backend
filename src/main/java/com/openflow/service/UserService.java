@@ -3,13 +3,16 @@ package com.openflow.service;
 import com.openflow.dto.AuthRequest;
 import com.openflow.dto.AuthResponse;
 import com.openflow.dto.RegisterRequest;
+import com.openflow.dto.UserInfoResponse;
 import com.openflow.model.Role;
 import com.openflow.model.User;
 import com.openflow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +69,9 @@ public class UserService {
         return new AuthResponse(token, user.getUsername(), role.name());
     }
 
+    @Autowired
+    private S3Service s3Service;
+
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -73,6 +79,85 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    /**
+     * Get user info with profile picture URL.
+     */
+    public UserInfoResponse getUserInfo(String username) {
+        User user = findByUsername(username);
+        String profilePictureUrl = null;
+        
+        if (user.getProfilePictureKey() != null && s3Service.isEnabled()) {
+            try {
+                profilePictureUrl = s3Service.getPresignedUrl(user.getProfilePictureKey());
+            } catch (Exception e) {
+                // Ignore - profile picture not available
+            }
+        }
+        
+        UserInfoResponse response = new UserInfoResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setAuthProvider(user.getAuthProvider());
+        response.setRole(getEffectiveRole(user).name());
+        response.setProfilePictureUrl(profilePictureUrl);
+        
+        return response;
+    }
+
+    /**
+     * Upload profile picture for user.
+     */
+    public String uploadProfilePicture(String username, MultipartFile file) throws IOException {
+        if (!s3Service.isEnabled()) {
+            throw new RuntimeException("File storage is not enabled");
+        }
+        
+        User user = findByUsername(username);
+        
+        // Delete old profile picture if exists
+        if (user.getProfilePictureKey() != null) {
+            s3Service.deleteFile(user.getProfilePictureKey());
+        }
+        
+        // Upload new picture
+        String s3Key = s3Service.uploadProfilePicture(file, user.getId());
+        user.setProfilePictureKey(s3Key);
+        userRepository.save(user);
+        
+        return s3Service.getPresignedUrl(s3Key);
+    }
+
+    /**
+     * Get profile picture URL for user.
+     */
+    public String getProfilePictureUrl(String username) {
+        User user = findByUsername(username);
+        
+        if (user.getProfilePictureKey() == null) {
+            return null;
+        }
+        
+        if (!s3Service.isEnabled()) {
+            return null;
+        }
+        
+        return s3Service.getPresignedUrl(user.getProfilePictureKey());
+    }
+
+    /**
+     * Delete profile picture for user.
+     */
+    public void deleteProfilePicture(String username) {
+        User user = findByUsername(username);
+        
+        if (user.getProfilePictureKey() != null) {
+            s3Service.deleteFile(user.getProfilePictureKey());
+            user.setProfilePictureKey(null);
+            userRepository.save(user);
+        }
     }
 
     /**
