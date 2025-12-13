@@ -5,7 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -44,14 +46,40 @@ public class S3Service {
         if (s3Enabled) {
             try {
                 Region region = Region.of(awsRegion);
-                s3Client = S3Client.builder()
-                        .region(region)
-                        .credentialsProvider(DefaultCredentialsProvider.create())
-                        .build();
-                s3Presigner = S3Presigner.builder()
-                        .region(region)
-                        .credentialsProvider(DefaultCredentialsProvider.create())
-                        .build();
+                
+                // Check for AWS credentials in environment variables
+                String accessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
+                String secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+                String sessionToken = System.getenv("AWS_SESSION_TOKEN");
+                
+                // Use session credentials if session token is present (AWS Academy)
+                if (accessKeyId != null && secretAccessKey != null && sessionToken != null && !sessionToken.isEmpty()) {
+                    logger.info("Using AWS session credentials (AWS Academy mode)");
+                    AwsSessionCredentials sessionCredentials = AwsSessionCredentials.create(
+                            accessKeyId, secretAccessKey, sessionToken);
+                    StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(sessionCredentials);
+                    
+                    s3Client = S3Client.builder()
+                            .region(region)
+                            .credentialsProvider(credentialsProvider)
+                            .build();
+                    s3Presigner = S3Presigner.builder()
+                            .region(region)
+                            .credentialsProvider(credentialsProvider)
+                            .build();
+                } else {
+                    // Fall back to default credentials provider
+                    logger.info("Using default AWS credentials provider");
+                    s3Client = S3Client.builder()
+                            .region(region)
+                            .credentialsProvider(DefaultCredentialsProvider.create())
+                            .build();
+                    s3Presigner = S3Presigner.builder()
+                            .region(region)
+                            .credentialsProvider(DefaultCredentialsProvider.create())
+                            .build();
+                }
+                
                 logger.info("AWS S3 client initialized successfully. Bucket: {}", bucketName);
             } catch (Exception e) {
                 logger.warn("Failed to initialize AWS S3 client: {}. File storage disabled.", e.getMessage());
