@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +30,8 @@ import java.util.List;
 @RequestMapping("/api/tasks")
 @CrossOrigin(origins = "${cors.allowed-origins}")
 public class TaskController {
+    private static final Logger logger = LoggerFactory.getLogger(TaskController.class);
+
     @Autowired
     private TaskService taskService;
 
@@ -55,6 +59,7 @@ public class TaskController {
             List<TaskDto> tasks = taskService.getTasksByBoardIdDto(boardId, userId);
             return ResponseEntity.ok(tasks);
         } catch (RuntimeException e) {
+            logger.error("Error fetching tasks for board: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
@@ -71,6 +76,7 @@ public class TaskController {
             TaskDto task = taskService.getTaskByIdDto(id, userId);
             return ResponseEntity.ok(task);
         } catch (RuntimeException e) {
+            logger.error("Error fetching task {}: {}", id, e.getMessage(), e);
             return ResponseEntity.notFound().build();
         }
     }
@@ -87,6 +93,7 @@ public class TaskController {
             TaskDto createdTask = taskService.createTaskDto(taskDto, userId);
             return ResponseEntity.ok(createdTask);
         } catch (RuntimeException e) {
+            logger.error("Error creating task: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
@@ -103,6 +110,7 @@ public class TaskController {
             TaskDto updatedTask = taskService.updateTaskDto(id, taskDto, userId);
             return ResponseEntity.ok(updatedTask);
         } catch (RuntimeException e) {
+            logger.error("Error updating task {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
@@ -119,6 +127,7 @@ public class TaskController {
             taskService.deleteTask(id, userId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
+            logger.error("Error deleting task {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
