@@ -24,7 +24,8 @@ public class Task {
     @Column(nullable = false)
     private String title;
 
-    @Size(max = 1000)
+    @Size(max = 255)
+    @Column(length = 255)
     private String description;
 
     @Column(name = "status_id", nullable = false)
