@@ -24,7 +24,7 @@ public class CustomFieldValue {
     @Column(name = "field_definition_id", nullable = false)
     private Long fieldDefinitionId;
 
-    @Column(name = "value", length = 1000)
+    @Column(name = "\"VALUE\"", length = 1000)
     private String value; // Stored as string, parsed based on field type
 
     @Column(name = "updated_at")
