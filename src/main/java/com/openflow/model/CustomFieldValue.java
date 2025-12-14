@@ -24,8 +24,17 @@ public class CustomFieldValue {
     @Column(name = "field_definition_id", nullable = false)
     private Long fieldDefinitionId;
 
-    @Column(name = "`VALUE`", length = 1000)
-    private String value; // Stored as string, parsed based on field type
+    @Column(name = "field_value", length = 1000)
+    private String fieldValue; // Stored as string, parsed based on field type
+    
+    // Alias for compatibility
+    public String getValue() {
+        return fieldValue;
+    }
+    
+    public void setValue(String value) {
+        this.fieldValue = value;
+    }
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
