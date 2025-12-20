@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -89,7 +90,7 @@ class BoardServiceTest {
             board.setId(3L);
             return board;
         });
-        doNothing().when(changeLogService).logCreate(anyString(), anyLong(), anyLong());
+        when(changeLogService.logCreate(anyString(), anyLong(), anyLong())).thenReturn(null);
 
         // Act
         Board result = boardService.createBoard(newBoard, ownerId);
@@ -119,7 +120,7 @@ class BoardServiceTest {
             board.setId(4L);
             return board;
         });
-        doNothing().when(changeLogService).logCreate(anyString(), anyLong(), anyLong());
+        when(changeLogService.logCreate(anyString(), anyLong(), anyLong())).thenReturn(null);
 
         // Act
         BoardDto result = boardService.createBoardDto(boardDto, ownerId);
@@ -140,7 +141,7 @@ class BoardServiceTest {
         when(boardRepository.findById(1L)).thenReturn(Optional.of(testBoard));
         when(boardAccessService.hasAccess(anyLong(), anyLong(), any(AccessLevel.class))).thenReturn(true);
         when(boardRepository.save(any(Board.class))).thenReturn(testBoard);
-        doNothing().when(changeLogService).logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString());
+        when(changeLogService.logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString())).thenReturn(null);
 
         Board updatedBoard = new Board();
         updatedBoard.setName("Updated Board Name");
@@ -167,7 +168,7 @@ class BoardServiceTest {
         when(boardRepository.findById(1L)).thenReturn(Optional.of(testBoard));
         when(boardAccessService.hasAccess(anyLong(), anyLong(), any(AccessLevel.class))).thenReturn(true);
         when(boardRepository.save(any(Board.class))).thenReturn(testBoard);
-        doNothing().when(changeLogService).logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString());
+        when(changeLogService.logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString())).thenReturn(null);
 
         BoardDto updateDto = new BoardDto();
         updateDto.setName("Updated via DTO");
@@ -189,7 +190,7 @@ class BoardServiceTest {
         // Arrange
         when(boardRepository.findById(1L)).thenReturn(Optional.of(testBoard));
         when(boardAccessService.hasAccess(anyLong(), anyLong(), any(AccessLevel.class))).thenReturn(true);
-        doNothing().when(changeLogService).logDelete(anyString(), anyLong(), anyLong());
+        when(changeLogService.logDelete(anyString(), anyLong(), anyLong())).thenReturn(null);
         doNothing().when(boardRepository).delete(any(Board.class));
 
         // Act

@@ -117,7 +117,7 @@ class TaskServiceTest {
             task.setId(2L);
             return task;
         });
-        doNothing().when(changeLogService).logCreate(anyString(), anyLong(), anyLong());
+        when(changeLogService.logCreate(anyString(), anyLong(), anyLong())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
 
         // Act
@@ -152,7 +152,7 @@ class TaskServiceTest {
             task.setId(3L);
             return task;
         });
-        doNothing().when(changeLogService).logCreate(anyString(), anyLong(), anyLong());
+        when(changeLogService.logCreate(anyString(), anyLong(), anyLong())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
 
         // Act
@@ -197,7 +197,7 @@ class TaskServiceTest {
         when(boardService.getBoardAccessLevel(boardId, ownerId)).thenReturn("OWNER");
         when(statusService.getStatusById(newStatusId, ownerId)).thenReturn(newStatus);
         when(taskRepository.save(any(Task.class))).thenReturn(testTask);
-        doNothing().when(changeLogService).logMove(anyString(), anyLong(), anyLong(), anyString(), anyString());
+        when(changeLogService.logMove(anyString(), anyLong(), anyLong(), anyString(), anyString())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
 
         Task updatedTask = new Task();
@@ -224,7 +224,7 @@ class TaskServiceTest {
         when(boardService.getBoardById(boardId, ownerId)).thenReturn(testBoard);
         when(boardService.getBoardAccessLevel(boardId, ownerId)).thenReturn("OWNER");
         when(taskRepository.save(any(Task.class))).thenReturn(testTask);
-        doNothing().when(changeLogService).logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString());
+        when(changeLogService.logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
 
         Task updatedTask = new Task();
@@ -253,7 +253,7 @@ class TaskServiceTest {
         when(boardService.getBoardAccessLevel(boardId, ownerId)).thenReturn("OWNER");
         when(userRepository.findById(2L)).thenReturn(Optional.of(testUser));
         when(taskRepository.save(any(Task.class))).thenReturn(testTask);
-        doNothing().when(changeLogService).logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString());
+        when(changeLogService.logFieldChange(anyString(), anyLong(), anyLong(), anyString(), anyString(), anyString())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
 
         Task updatedTask = new Task();
@@ -279,7 +279,7 @@ class TaskServiceTest {
         when(taskRepository.findById(1L)).thenReturn(Optional.of(testTask));
         when(boardService.getBoardById(boardId, ownerId)).thenReturn(testBoard);
         when(boardService.getBoardAccessLevel(boardId, ownerId)).thenReturn("OWNER");
-        doNothing().when(changeLogService).logDelete(anyString(), anyLong(), anyLong());
+        when(changeLogService.logDelete(anyString(), anyLong(), anyLong())).thenReturn(null);
         doNothing().when(notificationService).notifyEntityChange(anyString(), anyLong(), anyString(), anyString(), anyLong());
         doNothing().when(taskRepository).delete(any(Task.class));
 
